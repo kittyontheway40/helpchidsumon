@@ -129,6 +129,19 @@
   .dot-food{background:var(--pink);}
   .dot-ex{background:var(--green);}
   .dot-water{background:#6BB6D6;}
+  .dot-macro{background:#D4A574;}
+  .dot-recipe{background:#7BAE8F;}
+  .dot-analysis{background:#C77DAE;}
+  .advice-section-title{font-family:'Poppins';font-weight:700;font-size:12.5px;color:var(--purple-dark);margin:12px 0 6px;}
+  .advice-section-title:first-child{margin-top:0;}
+  .advice-point{display:flex;gap:8px;padding:6px 0;font-size:12.5px;line-height:1.5;color:var(--text);}
+  .advice-point .icon{flex:0 0 auto;}
+  .advice-priority{
+    background:linear-gradient(135deg, var(--purple-soft), var(--pink-soft));
+    border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.6;color:var(--text);
+  }
+  .advice-priority b{color:var(--purple-dark);}
+  .recipe-total{background:var(--purple-soft);border-radius:12px;padding:10px 12px;margin-top:8px;font-size:12px;line-height:1.6;color:var(--text);}
   .dot-plan{background:#F2A65A;}
   .dot-selfcare{background:#D88FC4;}
   .dot-sleep{background:var(--purple);}
@@ -422,6 +435,14 @@
     </div>
 
 
+    <div class="section">
+      <div class="section-title"><h2><span class="dot dot-analysis"></span>วิเคราะห์วันนี้</h2></div>
+      <div class="card">
+        <button class="add-btn food" style="width:100%;" onclick="showDailyAnalysis()">🔍 ดูคำแนะนำวันนี้</button>
+        <div id="dailyAnalysisResult" style="display:none;margin-top:12px;"></div>
+      </div>
+    </div>
+
     <div class="activity-chip-row">
       <div class="activity-chip" data-activity="home" onclick="setActivityLevel('home')">🏠 อยู่บ้าน</div>
       <div class="activity-chip" data-activity="office" onclick="setActivityLevel('office')">💼 นั่งทำงาน</div>
@@ -491,6 +512,14 @@
     </div>
 
     <div class="section">
+      <div class="section-title"><h2><span class="dot dot-macro"></span>สัดส่วนสารอาหารวันนี้</h2></div>
+      <div class="card">
+        <div id="macroPieWrap"></div>
+        <div class="empty-hint" id="macroPieEmpty">ยังไม่มีข้อมูลวันนี้</div>
+      </div>
+    </div>
+
+    <div class="section">
       <div class="section-title"><h2><span class="dot dot-food"></span>มื้ออาหาร</h2></div>
       <div class="card">
         <div class="item-list" id="foodList"></div>
@@ -530,6 +559,26 @@
         <div class="empty-hint" style="padding-top:4px;">ค้นหาจากฐานข้อมูล 1,300+ เมนู เลือกแล้วสารอาหารทั้ง 6 ตัวเติมให้อัตโนมัติ — ถ้าไม่มีในฐานข้อมูลกรอกเองได้เลย</div>
         <div class="form-row" style="margin-top:8px;">
           <button class="add-btn food" id="addFoodBtn" style="flex:1;" onclick="addFood()">+ เพิ่มมื้ออาหาร</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2><span class="dot dot-recipe"></span>สร้างเมนูสูตรของฉัน</h2></div>
+      <div class="card">
+        <div class="empty-hint" style="padding-top:0;">รวมหลายวัตถุดิบเป็นเมนูเดียว เช่น สมูทตี้/อาหารที่ทำเองประจำ บันทึกครั้งเดียว ค้นหาเจอได้เลยครั้งต่อไป</div>
+        <div class="search-wrap" style="margin-top:10px;">
+          <input class="name-input" id="recipeSearchInput" placeholder="ค้นหาวัตถุดิบเพิ่ม..." style="width:100%;">
+          <div id="recipeResults" class="search-results"></div>
+        </div>
+        <div id="recipeIngList" style="margin-top:8px;"></div>
+        <div class="empty-hint" id="recipeIngEmpty">ยังไม่มีวัตถุดิบ</div>
+        <div class="recipe-total" id="recipeTotal" style="display:none;"></div>
+        <div class="form-row" style="margin-top:10px;">
+          <input class="name-input" id="recipeNameInput" placeholder="ตั้งชื่อเมนู เช่น สมูทตี้เช้าประจำ" style="flex:1;">
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="add-btn food" style="flex:1;" onclick="saveRecipe()">💾 บันทึกเป็นเมนู</button>
         </div>
       </div>
     </div>
@@ -647,6 +696,10 @@
       <div class="period-chip active" data-period="1" onclick="setHistoryPeriod(1)">รายวัน</div>
       <div class="period-chip" data-period="7" onclick="setHistoryPeriod(7)">7 วัน</div>
       <div class="period-chip" data-period="30" onclick="setHistoryPeriod(30)">30 วัน</div>
+    </div>
+    <div class="card" id="calTrendCard" style="display:none;margin-bottom:16px;">
+      <div class="insights-title">📈 แนวโน้มแคลอรี่ย้อนหลัง</div>
+      <div id="calTrendChartWrap"></div>
     </div>
     <div id="historySummary"></div>
     <div id="historyList"></div>
@@ -1033,7 +1086,7 @@ const FOOD_DB = [
 {id:"TGS-0239",nTh:"สมูทตี้เขียว",nEn:"",kw:"สมูทตี้เขียว",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่มเพื่อสุขภาพ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:100,pro:2,fat:2,carb:20,sug:15.8,sod:120,conf:"high",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0240",nTh:"น้ำมะพร้าวสด",nEn:"",kw:"น้ำมะพร้าวสด",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่มเพื่อสุขภาพ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:45,pro:1,fat:0,carb:10,sug:8.7,sod:40,conf:"high",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0241",nTh:"น้ำอ้อยสด",nEn:"",kw:"น้ำอ้อยสด",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่มเพื่อสุขภาพ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:150,pro:0,fat:0,carb:35,sug:15.8,sod:75,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
-{id:"TGS-0242",nTh:"น้ำมะนาว",nEn:"",kw:"น้ำมะนาว",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่มเพื่อสุขภาพ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:30,pro:0,fat:0,carb:8,sug:3.6,sod:75,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
+{id:"TGS-0242",nTh:"น้ำมะนาว (ต่อ 100 กรัม)",nEn:"",kw:"น้ำมะนาว (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่มเพื่อสุขภาพ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:30,pro:0,fat:0,carb:8,sug:3.6,sod:75,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0243",nTh:"ชาเขียวไม่ใส่น้ำตาล",nEn:"",kw:"ชาเขียวไม่ใส่น้ำตาล",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่มเพื่อสุขภาพ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:0,pro:0,fat:0,carb:0,sug:0,sod:45,conf:"high",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0244",nTh:"น้ำขิง",nEn:"",kw:"น้ำขิง",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่มเพื่อสุขภาพ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:60,pro:1,fat:0,carb:15,sug:6.5,sod:75,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0245",nTh:"น้ำทับทิม",nEn:"",kw:"น้ำทับทิม",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่มเพื่อสุขภาพ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:80,pro:1,fat:0,carb:18,sug:8,sod:80,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
@@ -1060,7 +1113,7 @@ const FOOD_DB = [
 {id:"TGS-0266",nTh:"ข้าวต้มผักรวม",nEn:"",kw:"ข้าวต้มผักรวม",grp:"ไทย/ทั่วไป",cat:"อาหารสำหรับผู้สูงอายุ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:120,pro:3,fat:1,carb:20,sug:1.5,sod:800,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0267",nTh:"ปลานึ่ง",nEn:"",kw:"ปลานึ่ง",grp:"ไทย/ทั่วไป",cat:"อาหารสำหรับผู้สูงอายุ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:150,pro:20,fat:5,carb:0,sug:0,sod:930,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0268",nTh:"แกงเลียง",nEn:"",kw:"แกงเลียง",grp:"ไทย/ทั่วไป",cat:"อาหารสำหรับผู้สูงอายุ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:100,pro:4,fat:2,carb:15,sug:1.5,sod:1185,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
-{id:"TGS-0269",nTh:"ไข่ต้ม",nEn:"",kw:"ไข่ต้ม",grp:"ไทย/ทั่วไป",cat:"อาหารสำหรับผู้สูงอายุ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:70,pro:6,fat:5,carb:1,sug:0.1,sod:895,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
+{id:"TGS-0269",nTh:"ไข่ต้ม (ต่อ 100 กรัม)",nEn:"",kw:"ไข่ต้ม (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"อาหารสำหรับผู้สูงอายุ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:70,pro:6,fat:5,carb:1,sug:0.1,sod:895,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0270",nTh:"น้ำพริกผักลวก",nEn:"",kw:"น้ำพริกผักลวก",grp:"ไทย/ทั่วไป",cat:"อาหารสำหรับผู้สูงอายุ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:90,pro:3,fat:2,carb:10,sug:2.7,sod:65,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0271",nTh:"เต้าหู้ขาว",nEn:"",kw:"เต้าหู้ขาว",grp:"ไทย/ทั่วไป",cat:"อาหารสำหรับผู้สูงอายุ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:80,pro:8,fat:3,carb:2,sug:0.2,sod:965,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
 {id:"TGS-0272",nTh:"ซุปไก่",nEn:"",kw:"ซุปไก่",grp:"ไทย/ทั่วไป",cat:"อาหารสำหรับผู้สูงอายุ",refAmt:1,refUnit:"หน่วยบริโภค",refG:null,kcal:120,pro:10,fat:5,carb:5,sug:0.5,sod:1275,conf:"medium",ref:false,src:"ThaiGymStuffs",url:"https://thaigymstuffs.com/blog/300-thai-food-calories/",mode:"serving"},
@@ -1113,7 +1166,7 @@ const FOOD_DB = [
 {id:"TH-2005",nTh:"มันขี้หนู หัวใหญ่ ภาคใต้",nEn:"",kw:"มันขี้หนู หัวใหญ่ ภาคใต้",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:85,pro:1.1,fat:0.5,carb:18.9,sug:1.6,sod:340,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-2006",nTh:"มันตีนแรด",nEn:"",kw:"มันตีนแรด",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:64,pro:0.8,fat:0.2,carb:14.7,sug:1.2,sod:325,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-2007",nTh:"มันเทศ, สีเหลือง",nEn:"",kw:"มันเทศ, สีเหลือง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:97,pro:0.6,fat:0.1,carb:23.3,sug:1.8,sod:320,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-2008",nTh:"มันฝรั่ง",nEn:"",kw:"มันฝรั่ง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:73,pro:2.5,fat:0.2,carb:15.3,sug:10.8,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-2008",nTh:"มันฝรั่ง (ต่อ 100 กรัม)",nEn:"",kw:"มันฝรั่ง (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:73,pro:2.5,fat:0.2,carb:15.3,sug:10.8,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-2009",nTh:"มันสำปะหลัง",nEn:"",kw:"มันสำปะหลัง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:137,pro:0.8,fat:0.2,carb:33,sug:2.5,sod:310,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-2010",nTh:"มันสำปะหลัง,แป้ง",nEn:"",kw:"มันสำปะหลัง,แป้ง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:351,pro:0.3,fat:0.1,carb:87.2,sug:6.8,sod:320,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-2011",nTh:"มันอ้น",nEn:"",kw:"มันอ้น",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:71,pro:0.9,fat:0.3,carb:16.2,sug:1.3,sod:340,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1201,12 +1254,12 @@ const FOOD_DB = [
 {id:"TH-4010",nTh:"กะทกรก, ยอด",nEn:"",kw:"กะทกรก, ยอด",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:66,pro:7.5,fat:1.2,carb:6.4,sug:0.5,sod:300,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4011",nTh:"กะเพราแดง,ใบ",nEn:"",kw:"กะเพราแดง,ใบ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:46,pro:4.2,fat:0.5,carb:6.1,sug:0.5,sod:305,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4012",nTh:"กะหล่ำ,ดอก",nEn:"",kw:"กะหล่ำ,ดอก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:13,pro:1,fat:0.1,carb:2.1,sug:0.2,sod:340,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-4013",nTh:"กะหล่ำปลี",nEn:"",kw:"กะหล่ำปลี",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:16,pro:1.6,fat:0.1,carb:2.2,sug:0.2,sod:320,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-4013",nTh:"กะหล่ำปลี (ต่อ 100 กรัม)",nEn:"",kw:"กะหล่ำปลี (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:16,pro:1.6,fat:0.1,carb:2.2,sug:0.2,sod:320,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4014",nTh:"กุยฉ่าย,ดอก",nEn:"",kw:"กุยฉ่าย,ดอก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:32,pro:2.5,fat:0.3,carb:4.8,sug:0.4,sod:305,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4015",nTh:"ขจร,ดอก",nEn:"",kw:"ขจร,ดอก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:78,pro:5,fat:1.1,carb:12.1,sug:1,sod:360,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4016",nTh:"ขนุน,อ่อน",nEn:"",kw:"ขนุน,อ่อน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:49,pro:1.6,fat:1,carb:8.3,sug:0.7,sod:325,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4017",nTh:"ขมิ้นขาว",nEn:"",kw:"ขมิ้นขาว",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:26,pro:0.5,fat:0.5,carb:4.8,sug:0.4,sod:355,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-4018",nTh:"ข้าวโพด,อ่อน",nEn:"",kw:"ข้าวโพด,อ่อน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:33,pro:2.3,fat:0.3,carb:5.3,sug:0.4,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-4018",nTh:"ข้าวโพด,อ่อน (ต่อ 100 กรัม)",nEn:"",kw:"ข้าวโพด,อ่อน (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:33,pro:2.3,fat:0.3,carb:5.3,sug:0.4,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4019",nTh:"ข้าวสาร,ดอก",nEn:"",kw:"ข้าวสาร,ดอก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:39,pro:2.2,fat:0.6,carb:6.2,sug:0.5,sod:360,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4020",nTh:"ข่าอ่อน,หน่อ",nEn:"",kw:"ข่าอ่อน,หน่อ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:21,pro:1.6,fat:0.4,carb:2.7,sug:0.2,sod:340,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4021",nTh:"ข่าอ่อน,หัว",nEn:"",kw:"ข่าอ่อน,หัว",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:24,pro:1.3,fat:0.3,carb:4.1,sug:0.4,sod:355,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1218,7 +1271,7 @@ const FOOD_DB = [
 {id:"TH-4027",nTh:"คูน",nEn:"",kw:"คูน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:12,pro:0.5,fat:0.1,carb:2.3,sug:0.2,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4028",nTh:"แค, ดอก",nEn:"",kw:"แค, ดอก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:38,pro:2.1,fat:0.2,carb:6.9,sug:0.6,sod:350,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4029",nTh:"แค, ยอด",nEn:"",kw:"แค, ยอด",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:108,pro:8.3,fat:2.6,carb:12.8,sug:1,sod:320,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-4030",nTh:"แครอท",nEn:"",kw:"แครอท",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:42,pro:1.6,fat:0.4,carb:7.9,sug:0.6,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-4030",nTh:"แครอท (ต่อ 100 กรัม)",nEn:"",kw:"แครอท (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:42,pro:1.6,fat:0.4,carb:7.9,sug:0.6,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4031",nTh:"จำปานา",nEn:"",kw:"จำปานา",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:37,pro:2.8,fat:0.5,carb:5.3,sug:0.5,sod:360,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4032",nTh:"จิก, ยอด",nEn:"",kw:"จิก, ยอด",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:56,pro:3.7,fat:0.3,carb:9.6,sug:0.8,sod:325,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4033",nTh:"ชะพลู,ใบ",nEn:"",kw:"ชะพลู,ใบ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:119,pro:5.4,fat:2.5,carb:18.8,sug:1.5,sod:325,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1231,7 +1284,7 @@ const FOOD_DB = [
 {id:"TH-4040",nTh:"ดอกโสน",nEn:"",kw:"ดอกโสน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:54,pro:3.6,fat:0.4,carb:9.1,sug:0.7,sod:320,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4042",nTh:"โด่เด่",nEn:"",kw:"โด่เด่",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:70,pro:4.7,fat:0.9,carb:10.8,sug:0.8,sod:305,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4043",nTh:"ต้นกระเทียม",nEn:"",kw:"ต้นกระเทียม",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:40,pro:3.2,fat:0.8,carb:5.1,sug:0.4,sod:350,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-4044",nTh:"ต้นหอม",nEn:"",kw:"ต้นหอม",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:34,pro:2,fat:0.3,carb:5.8,sug:0.4,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-4044",nTh:"ต้นหอม (ต่อ 100 กรัม)",nEn:"",kw:"ต้นหอม (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:34,pro:2,fat:0.3,carb:5.8,sug:0.4,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4045",nTh:"ต้นหอม,ดอก",nEn:"",kw:"ต้นหอม,ดอก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:20,pro:1,fat:0.1,carb:3.8,sug:0.3,sod:365,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4046",nTh:"ตะเกียงกะหล่ำ",nEn:"",kw:"ตะเกียงกะหล่ำ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:36,pro:2.8,fat:0.4,carb:5.3,sug:0.4,sod:310,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4047",nTh:"ตะละปัดฤาษี, ตะละปัดใบพาย",nEn:"",kw:"ตะละปัดฤาษี, ตะละปัดใบพาย",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:17,pro:1.2,fat:0.3,carb:2.4,sug:0.2,sod:340,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1239,15 +1292,15 @@ const FOOD_DB = [
 {id:"TH-4049",nTh:"ตั้งโอ๋,ใบ",nEn:"",kw:"ตั้งโอ๋,ใบ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:20,pro:2.1,fat:0.3,carb:2.2,sug:0.2,sod:365,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4050",nTh:"ตำลึง,ใบ,ยอดอ่อน",nEn:"",kw:"ตำลึง,ใบ,ยอดอ่อน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:39,pro:3.3,fat:0.4,carb:5.5,sug:0.5,sod:345,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4051",nTh:"เตียง,ผล",nEn:"",kw:"เตียง,ผล",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:64,pro:0.5,fat:0.7,carb:13.9,sug:1,sod:305,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-4052",nTh:"แตงกวา",nEn:"",kw:"แตงกวา",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:15,pro:0.8,fat:0.1,carb:2.6,sug:0.8,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-4052",nTh:"แตงกวา (ต่อ 100 กรัม)",nEn:"",kw:"แตงกวา (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:15,pro:0.8,fat:0.1,carb:2.6,sug:0.8,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4053",nTh:"แตงไทยอ่อน",nEn:"",kw:"แตงไทยอ่อน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:13,pro:0.4,fat:0.1,carb:2.2,sug:0.2,sod:360,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4054",nTh:"แตงโมอ่อน",nEn:"",kw:"แตงโมอ่อน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:12,pro:0.4,fat:0.1,carb:2.4,sug:1.7,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4055",nTh:"แตงร้าน",nEn:"",kw:"แตงร้าน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:8,pro:0.6,fat:0.1,carb:1.3,sug:0.1,sod:345,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4056",nTh:"ถั่วแขก",nEn:"",kw:"ถั่วแขก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:31,pro:1.9,fat:0.1,carb:5.5,sug:0.5,sod:355,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-4057",nTh:"ถั่วงอก",nEn:"",kw:"ถั่วงอก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:39,pro:2.8,fat:0.1,carb:6.6,sug:0.6,sod:355,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-4057",nTh:"ถั่วงอก (ต่อ 100 กรัม)",nEn:"",kw:"ถั่วงอก (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:39,pro:2.8,fat:0.1,carb:6.6,sug:0.6,sod:355,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4058",nTh:"ถั่วงอกหัวโต",nEn:"",kw:"ถั่วงอกหัวโต",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:79,pro:9.1,fat:3.4,carb:3,sug:0.2,sod:335,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4059",nTh:"ถั่วปี, ผักสด",nEn:"",kw:"ถั่วปี, ผักสด",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:39,pro:2,fat:0.3,carb:7.1,sug:1.9,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-4060",nTh:"ถั่วฝักยาว",nEn:"",kw:"ถั่วฝักยาว",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:39,pro:2.6,fat:0.5,carb:5.9,sug:0.5,sod:355,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-4060",nTh:"ถั่วฝักยาว (ต่อ 100 กรัม)",nEn:"",kw:"ถั่วฝักยาว (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:39,pro:2.6,fat:0.5,carb:5.9,sug:0.5,sod:355,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4061",nTh:"ถั่วฝักยาว, แดง",nEn:"",kw:"ถั่วฝักยาว, แดง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:35,pro:2.8,fat:0.3,carb:5.3,sug:0.4,sod:300,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4062",nTh:"ถั่วพู, ฝักอ่อน",nEn:"",kw:"ถั่วพู, ฝักอ่อน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:23,pro:2.1,fat:0.1,carb:3.5,sug:0.3,sod:305,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4063",nTh:"ถั่วไร่",nEn:"",kw:"ถั่วไร่",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:36,pro:2.7,fat:0.3,carb:5.5,sug:0.4,sod:310,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1260,7 +1313,7 @@ const FOOD_DB = [
 {id:"TH-4072",nTh:"เนียงนก, ผล",nEn:"",kw:"เนียงนก, ผล",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:153,pro:8.6,fat:0.7,carb:28.1,sug:2.3,sod:335,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4073",nTh:"เนียงรอก",nEn:"",kw:"เนียงรอก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:88,pro:2.2,fat:0.8,carb:18,sug:1.4,sod:325,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4074",nTh:"เนียงหรือชเนียง, ผล",nEn:"",kw:"เนียงหรือชเนียง, ผล",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:162,pro:8.8,fat:0.4,carb:30.7,sug:2.5,sod:340,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-4075",nTh:"บร็อคโคลี่",nEn:"",kw:"บร็อคโคลี่",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:33,pro:2.7,fat:0.3,carb:4.9,sug:0.4,sod:330,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-4075",nTh:"บร็อคโคลี่ (ต่อ 100 กรัม)",nEn:"",kw:"บร็อคโคลี่ (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:33,pro:2.7,fat:0.3,carb:4.9,sug:0.4,sod:330,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4076",nTh:"บวบงู",nEn:"",kw:"บวบงู",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:16,pro:0.9,fat:0.1,carb:2.8,sug:0.2,sod:330,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4077",nTh:"บวบหอม",nEn:"",kw:"บวบหอม",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:16,pro:0.7,fat:0.1,carb:3,sug:0.3,sod:350,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4078",nTh:"บวบเหลี่ยม",nEn:"",kw:"บวบเหลี่ยม",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:18,pro:0.7,fat:0.2,carb:3.3,sug:0.3,sod:360,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1282,7 +1335,7 @@ const FOOD_DB = [
 {id:"TH-4094",nTh:"ผักกะโดน",nEn:"",kw:"ผักกะโดน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:90,pro:2.6,fat:0.5,carb:18.8,sug:1.6,sod:360,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4095",nTh:"ผักกะสัง",nEn:"",kw:"ผักกะสัง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:13,pro:0.6,fat:0.2,carb:2.1,sug:0.2,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4096",nTh:"ผักกะออม",nEn:"",kw:"ผักกะออม",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:24,pro:1.4,fat:0.3,carb:3.9,sug:0.3,sod:350,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-40977",nTh:"ผักกาดขาว",nEn:"",kw:"ผักกาดขาว",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:11,pro:1.5,fat:0.1,carb:1.1,sug:0.1,sod:335,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-40977",nTh:"ผักกาดขาว (ต่อ 100 กรัม)",nEn:"",kw:"ผักกาดขาว (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:11,pro:1.5,fat:0.1,carb:1.1,sug:0.1,sod:335,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4098",nTh:"ผักกาดเขียว จ.กรุงเทพฯ",nEn:"",kw:"ผักกาดเขียว จ.กรุงเทพฯ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:17,pro:1.8,fat:0.1,carb:2.3,sug:0.2,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4099",nTh:"ผักกาดเขียว จ.เชียงใหม่",nEn:"",kw:"ผักกาดเขียว จ.เชียงใหม่",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:26,pro:2.5,fat:0.4,carb:3.1,sug:0.3,sod:345,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-4100",nTh:"ผักกาดนกเขา จ.สงขลา",nEn:"",kw:"ผักกาดนกเขา จ.สงขลา",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:24,pro:1.8,fat:0.3,carb:3.4,sug:0.2,sod:300,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1349,7 +1402,7 @@ const FOOD_DB = [
 {id:"TH-115",nTh:"พริกเหลือง",nEn:"",kw:"พริกเหลือง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:82,pro:4,fat:3.6,carb:8.4,sug:0.6,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-116",nTh:"พริกหวาน, พริกยักษ์",nEn:"",kw:"พริกหวาน, พริกยักษ์",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:55,pro:3.2,fat:1.6,carb:6.9,sug:0.5,sod:305,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-117",nTh:"ฟักข้าว",nEn:"",kw:"ฟักข้าว",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:28,pro:0.9,fat:0.1,carb:5.8,sug:0.5,sod:355,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-118",nTh:"ฟักเขียว",nEn:"",kw:"ฟักเขียว",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:11,pro:0.4,fat:0,carb:2.4,sug:0.2,sod:305,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-118",nTh:"ฟักเขียว (ต่อ 100 กรัม)",nEn:"",kw:"ฟักเขียว (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:11,pro:0.4,fat:0,carb:2.4,sug:0.2,sod:305,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-119",nTh:"ฟักทอง เนื้อ",nEn:"",kw:"ฟักทอง เนื้อ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:124,pro:2.9,fat:1.5,carb:24.6,sug:1.9,sod:320,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-120",nTh:"ฟักทอง เนื้อและเปลือก",nEn:"",kw:"ฟักทอง เนื้อและเปลือก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:43,pro:1.9,fat:0.2,carb:8.5,sug:0.7,sod:360,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-121",nTh:"ฟักทอง ยอดอ่อน",nEn:"",kw:"ฟักทอง ยอดอ่อน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:16,pro:2,fat:0.2,carb:1.6,sug:0.1,sod:350,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1362,7 +1415,7 @@ const FOOD_DB = [
 {id:"TH-128",nTh:"มะเขือขื่น",nEn:"",kw:"มะเขือขื่น",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:48,pro:2.1,fat:2,carb:5.5,sug:1.5,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-129",nTh:"มะเขือเครือ",nEn:"",kw:"มะเขือเครือ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:13,pro:0.6,fat:0.1,carb:2.5,sug:0.7,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-130",nTh:"มะเขือเจ้าพระยา",nEn:"",kw:"มะเขือเจ้าพระยา",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:26,pro:1.1,fat:0.3,carb:4.6,sug:1.5,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-131",nTh:"มะเขือเทศ",nEn:"",kw:"มะเขือเทศ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:22,pro:1.1,fat:0.3,carb:3.6,sug:1.1,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-131",nTh:"มะเขือเทศ (ต่อ 100 กรัม)",nEn:"",kw:"มะเขือเทศ (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:22,pro:1.1,fat:0.3,carb:3.6,sug:1.1,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-132",nTh:"มะเขือพวง",nEn:"",kw:"มะเขือพวง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:46,pro:2.8,fat:0.6,carb:7.4,sug:2.4,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-133",nTh:"มะเขือม่วง",nEn:"",kw:"มะเขือม่วง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:28,pro:1.4,fat:0.2,carb:5.1,sug:1.5,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-134",nTh:"มะเขือแม่สอด(มะระหวาน)",nEn:"",kw:"มะเขือแม่สอด(มะระหวาน)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:18,pro:0.7,fat:0.2,carb:3.2,sug:1,sod:25,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1415,7 +1468,7 @@ const FOOD_DB = [
 {id:"TH-5004",nTh:"กล้วยหอม",nEn:"",kw:"กล้วยหอม",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:132,pro:0.9,fat:0.2,carb:31.7,sug:20.8,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5005",nTh:"กล้วยหักมุก",nEn:"",kw:"กล้วยหักมุก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:113,pro:1.2,fat:0.2,carb:26.7,sug:20.5,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5006",nTh:"ขนุน, ละมุด",nEn:"",kw:"ขนุน, ละมุด",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:117,pro:1.3,fat:0.4,carb:27.1,sug:2.2,sod:340,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-5007",nTh:"เงาะ",nEn:"",kw:"เงาะ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:67,pro:0.9,fat:0.1,carb:15.6,sug:1.2,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-5007",nTh:"เงาะ (ต่อ 100 กรัม)",nEn:"",kw:"เงาะ (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:67,pro:0.9,fat:0.1,carb:15.6,sug:1.2,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5008",nTh:"เงาะโรงเรียน",nEn:"",kw:"เงาะโรงเรียน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:76,pro:1,fat:0.3,carb:17.4,sug:1.3,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5009",nTh:"เงาะสีชมพู",nEn:"",kw:"เงาะสีชมพู",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:79,pro:1.1,fat:0.4,carb:17.8,sug:1.4,sod:325,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5010",nTh:"ชมพู่แก้มแหม่ม",nEn:"",kw:"ชมพู่แก้มแหม่ม",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:16,pro:0.3,fat:0,carb:3.8,sug:0.3,sod:300,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1445,7 +1498,7 @@ const FOOD_DB = [
 {id:"TH-5034",nTh:"มะกอกฝรั่ง",nEn:"",kw:"มะกอกฝรั่ง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:52,pro:0.8,fat:0,carb:12.3,sug:8.3,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5035",nTh:"มะขามเทศ, ชนิดมัน",nEn:"",kw:"มะขามเทศ, ชนิดมัน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:87,pro:3.5,fat:1,carb:16,sug:1.2,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5036",nTh:"มะขามป้อม",nEn:"",kw:"มะขามป้อม",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:70,pro:0.3,fat:0.1,carb:17,sug:1.3,sod:325,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-5037",nTh:"มะขามหวาน",nEn:"",kw:"มะขามหวาน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:333,pro:2.9,fat:0,carb:80.3,sug:6.8,sod:350,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-5037",nTh:"มะขามหวาน (ต่อ 100 กรัม)",nEn:"",kw:"มะขามหวาน (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:333,pro:2.9,fat:0,carb:80.3,sug:6.8,sod:350,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5038",nTh:"มะปรางสุก",nEn:"",kw:"มะปรางสุก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:53,pro:0.4,fat:0,carb:12.8,sug:1,sod:335,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5039",nTh:"มะเฟือง",nEn:"",kw:"มะเฟือง",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:37,pro:0.4,fat:0.1,carb:8.7,sug:0.7,sod:330,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5040",nTh:"มะไฟ",nEn:"",kw:"มะไฟ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:48,pro:0.7,fat:0.3,carb:10.5,sug:0.9,sod:340,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1468,7 +1521,7 @@ const FOOD_DB = [
 {id:"TH-5057",nTh:"มะละกอ, สุก",nEn:"",kw:"มะละกอ, สุก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:53,pro:0.8,fat:0.3,carb:11.8,sug:7.8,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5058",nTh:"มะละกอ, ค่อนข้างสุก",nEn:"",kw:"มะละกอ, ค่อนข้างสุก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:13,pro:0.2,fat:0,carb:3,sug:2,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5059",nTh:"มะละกอ, สุก, จ.อุบลฯ",nEn:"",kw:"มะละกอ, สุก, จ.อุบลฯ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:24,pro:0.2,fat:0.8,carb:4,sug:2.9,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-5060",nTh:"มังคุด",nEn:"",kw:"มังคุด",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:82,pro:0.5,fat:0,carb:20.1,sug:1.5,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-5060",nTh:"มังคุด (ต่อ 100 กรัม)",nEn:"",kw:"มังคุด (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:82,pro:0.5,fat:0,carb:20.1,sug:1.5,sod:315,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5061",nTh:"ระกำ",nEn:"",kw:"ระกำ",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:50,pro:0.6,fat:0.2,carb:11.5,sug:1,sod:345,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5062",nTh:"ละมุด, ไทย",nEn:"",kw:"ละมุด, ไทย",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:93,pro:0.3,fat:0.8,carb:21.2,sug:1.7,sod:330,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5063",nTh:"ละมุด, มะกอก",nEn:"",kw:"ละมุด, มะกอก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:35,pro:0.2,fat:0.2,carb:8,sug:0.6,sod:320,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1476,7 +1529,7 @@ const FOOD_DB = [
 {id:"TH-5065",nTh:"ลำใย",nEn:"",kw:"ลำใย",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:111,pro:1,fat:0.5,carb:25.6,sug:2.1,sod:335,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5066",nTh:"ลำใย, กะโหลก",nEn:"",kw:"ลำใย, กะโหลก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:77,pro:0.9,fat:0.1,carb:18.2,sug:1.5,sod:340,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5067",nTh:"ลำใย, เบี้ยวเขียว",nEn:"",kw:"ลำใย, เบี้ยวเขียว",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:66,pro:1.1,fat:0.1,carb:15.1,sug:1.2,sod:335,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
-{id:"TH-5068",nTh:"ลิ้นจี่",nEn:"",kw:"ลิ้นจี่",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:57,pro:0.9,fat:0.1,carb:13.2,sug:9.4,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
+{id:"TH-5068",nTh:"ลิ้นจี่ (ต่อ 100 กรัม)",nEn:"",kw:"ลิ้นจี่ (ต่อ 100 กรัม)",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:57,pro:0.9,fat:0.1,carb:13.2,sug:9.4,sod:5,conf:"high",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5069",nTh:"ลูกจัน, สุก",nEn:"",kw:"ลูกจัน, สุก",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:325,pro:13.6,fat:0.6,carb:66.3,sug:5.8,sod:360,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5070",nTh:"ลูกตาล, อ่อน",nEn:"",kw:"ลูกตาล, อ่อน",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:49,pro:0.5,fat:1,carb:9.5,sug:0.8,sod:335,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
 {id:"TH-5071",nTh:"ลูกหว้า",nEn:"",kw:"ลูกหว้า",grp:"ไทย/ทั่วไป",cat:"ไม่ระบุหมวดหมู่",refAmt:100,refUnit:"กรัม",refG:100,kcal:59,pro:0.9,fat:0.1,carb:13.6,sug:1.1,sod:325,conf:"medium",ref:false,src:"Nutritional Thai Food",url:"",mode:"gram"},
@@ -1911,59 +1964,6 @@ const FOOD_DB = [
 {id:"FDC-2709810",nTh:"ผสม น้ำผัก",nEn:"Mixed vegetable juice",kw:"ผสม น้ำผัก; Mixed vegetable juice",grp:"ไทย/นิยมในประเทศไทย",cat:"น้ำผัก",refAmt:100,refUnit:"กรัม",refG:100,kcal:28,pro:0.72,fat:0.16,carb:6.3,sug:2.62,sod:82,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2709810/nutrients",mode:"gram"},
 {id:"FDC-2709731",nTh:"มะเขือเทศ และ น้ำผัก, ร้อยเปอร์เซ็นต์",nEn:"Tomato and vegetable juice, 100%",kw:"มะเขือเทศ และ น้ำผัก, ร้อยเปอร์เซ็นต์; Tomato and vegetable juice, 100%",grp:"ไทย/นิยมในประเทศไทย",cat:"น้ำผัก",refAmt:100,refUnit:"กรัม",refG:100,kcal:22,pro:0.93,fat:0.31,carb:3.87,sug:2.84,sod:169,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2709731/nutrients",mode:"gram"},
 {id:"FDC-2709732",nTh:"มะเขือเทศ และ น้ำผัก, ร้อยเปอร์เซ็นต์, โซเดียมต่ำ",nEn:"Tomato and vegetable juice, 100%, low sodium",kw:"มะเขือเทศ และ น้ำผัก, ร้อยเปอร์เซ็นต์, โซเดียมต่ำ; Tomato and vegetable juice, 100%, low sodium",grp:"ไทย/นิยมในประเทศไทย",cat:"น้ำผัก",refAmt:100,refUnit:"กรัม",refG:100,kcal:22,pro:0.6,fat:0.1,carb:4.59,sug:3.28,sod:58,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2709732/nutrients",mode:"gram"},
-{id:"FDC-2710470",nTh:"กาแฟ และ ชิโครี, ชง",nEn:"Coffee and chicory, brewed",kw:"กาแฟ และ ชิโครี, ชง; Coffee and chicory, brewed",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:1,pro:0.12,fat:0.02,carb:0,sug:0,sod:2,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710470/nutrients",mode:"gram"},
-{id:"FDC-2710471",nTh:"กาแฟ และ ชิโครี, ชง, ไม่มีคาเฟอีน",nEn:"Coffee and chicory, brewed, decaffeinated",kw:"กาแฟ และ ชิโครี, ชง, ไม่มีคาเฟอีน; Coffee and chicory, brewed, decaffeinated",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:0,pro:0.1,fat:0,carb:0,sug:0,sod:2,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710471/nutrients",mode:"gram"},
-{id:"FDC-2710486",nTh:"กาแฟ ทดแทน",nEn:"Coffee substitute",kw:"กาแฟ ทดแทน; Coffee substitute",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:6,pro:0.1,fat:0.04,carb:1.3,sug:0.08,sod:5,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710486/nutrients",mode:"gram"},
-{id:"FDC-2710410",nTh:"กาแฟ, กาแฟ มอคค่า",nEn:"Coffee, Cafe Mocha",kw:"กาแฟ, กาแฟ มอคค่า; Coffee, Cafe Mocha",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:64,pro:2.56,fat:1.47,carb:10.2,sug:9.3,sod:46,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710410/nutrients",mode:"gram"},
-{id:"FDC-2710413",nTh:"กาแฟ, กาแฟ มอคค่า, ไม่มีคาเฟอีน",nEn:"Coffee, Cafe Mocha, decaffeinated",kw:"กาแฟ, กาแฟ มอคค่า, ไม่มีคาเฟอีน; Coffee, Cafe Mocha, decaffeinated",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:64,pro:2.56,fat:1.47,carb:10.2,sug:9.3,sod:46,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710413/nutrients",mode:"gram"},
-{id:"FDC-2710414",nTh:"กาแฟ, กาแฟ มอคค่า, ไม่มีคาเฟอีน, ไม่มีไขมัน",nEn:"Coffee, Cafe Mocha, decaffeinated, nonfat",kw:"กาแฟ, กาแฟ มอคค่า, ไม่มีคาเฟอีน, ไม่มีไขมัน; Coffee, Cafe Mocha, decaffeinated, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:52,pro:2.61,fat:0.09,carb:10.2,sug:9.42,sod:47,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710414/nutrients",mode:"gram"},
-{id:"FDC-2710415",nTh:"กาแฟ, กาแฟ มอคค่า, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Cafe Mocha, decaffeinated, with non-dairy milk",kw:"กาแฟ, กาแฟ มอคค่า, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Cafe Mocha, decaffeinated, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:50,pro:0.88,fat:1.24,carb:8.8,sug:7.12,sod:54,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710415/nutrients",mode:"gram"},
-{id:"FDC-2710411",nTh:"กาแฟ, กาแฟ มอคค่า, ไม่มีไขมัน",nEn:"Coffee, Cafe Mocha, nonfat",kw:"กาแฟ, กาแฟ มอคค่า, ไม่มีไขมัน; Coffee, Cafe Mocha, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:52,pro:2.6,fat:0.09,carb:10.2,sug:9.37,sod:47,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710411/nutrients",mode:"gram"},
-{id:"FDC-2710412",nTh:"กาแฟ, กาแฟ มอคค่า, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Cafe Mocha, with non-dairy milk",kw:"กาแฟ, กาแฟ มอคค่า, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Cafe Mocha, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:50,pro:0.88,fat:1.24,carb:8.76,sug:7.08,sod:54,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710412/nutrients",mode:"gram"},
-{id:"FDC-2710472",nTh:"กาแฟ, คาปูชิโน",nEn:"Coffee, Cappuccino",kw:"กาแฟ, คาปูชิโน; Coffee, Cappuccino",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:27,pro:1.71,fat:0.99,carb:2.75,sug:2.46,sod:23,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710472/nutrients",mode:"gram"},
-{id:"FDC-2710475",nTh:"กาแฟ, คาปูชิโน, ไม่มีคาเฟอีน",nEn:"Coffee, Cappuccino, decaffeinated",kw:"กาแฟ, คาปูชิโน, ไม่มีคาเฟอีน; Coffee, Cappuccino, decaffeinated",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:27,pro:1.72,fat:0.99,carb:2.76,sug:2.48,sod:23,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710475/nutrients",mode:"gram"},
-{id:"FDC-2710476",nTh:"กาแฟ, คาปูชิโน, ไม่มีคาเฟอีน, ไม่มีไขมัน",nEn:"Coffee, Cappuccino, decaffeinated, nonfat",kw:"กาแฟ, คาปูชิโน, ไม่มีคาเฟอีน, ไม่มีไขมัน; Coffee, Cappuccino, decaffeinated, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:19,pro:1.75,fat:0.07,carb:2.77,sug:2.56,sod:24,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710476/nutrients",mode:"gram"},
-{id:"FDC-2710477",nTh:"กาแฟ, คาปูชิโน, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Cappuccino, decaffeinated, with non-dairy milk",kw:"กาแฟ, คาปูชิโน, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Cappuccino, decaffeinated, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:17,pro:0.6,fat:0.85,carb:1.83,sug:1.04,sod:29,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710477/nutrients",mode:"gram"},
-{id:"FDC-2710473",nTh:"กาแฟ, คาปูชิโน, ไม่มีไขมัน",nEn:"Coffee, Cappuccino, nonfat",kw:"กาแฟ, คาปูชิโน, ไม่มีไขมัน; Coffee, Cappuccino, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:19,pro:1.75,fat:0.07,carb:2.76,sug:2.54,sod:24,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710473/nutrients",mode:"gram"},
-{id:"FDC-2710474",nTh:"กาแฟ, คาปูชิโน, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Cappuccino, with non-dairy milk",kw:"กาแฟ, คาปูชิโน, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Cappuccino, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:17,pro:0.6,fat:0.84,carb:1.82,sug:1.03,sod:29,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710474/nutrients",mode:"gram"},
-{id:"FDC-2710381",nTh:"กาแฟ, คิวบา",nEn:"Coffee, Cuban",kw:"กาแฟ, คิวบา; Coffee, Cuban",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:34,pro:0.11,fat:0.19,carb:7.84,sug:6.28,sod:13,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710381/nutrients",mode:"gram"},
-{id:"FDC-2710443",nTh:"กาแฟ, เย็น กาแฟ มอคค่า",nEn:"Coffee, Iced Cafe Mocha",kw:"กาแฟ, เย็น กาแฟ มอคค่า; Coffee, Iced Cafe Mocha",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:50,pro:1.58,fat:0.91,carb:8.95,sug:7.99,sod:35,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710443/nutrients",mode:"gram"},
-{id:"FDC-2710446",nTh:"กาแฟ, เย็น กาแฟ มอคค่า, ไม่มีคาเฟอีน",nEn:"Coffee, Iced Cafe Mocha, decaffeinated",kw:"กาแฟ, เย็น กาแฟ มอคค่า, ไม่มีคาเฟอีน; Coffee, Iced Cafe Mocha, decaffeinated",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:51,pro:1.59,fat:0.92,carb:8.99,sug:8.03,sod:36,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710446/nutrients",mode:"gram"},
-{id:"FDC-2710447",nTh:"กาแฟ, เย็น กาแฟ มอคค่า, ไม่มีคาเฟอีน, ไม่มีไขมัน",nEn:"Coffee, Iced Cafe Mocha, decaffeinated, nonfat",kw:"กาแฟ, เย็น กาแฟ มอคค่า, ไม่มีคาเฟอีน, ไม่มีไขมัน; Coffee, Iced Cafe Mocha, decaffeinated, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:43,pro:1.62,fat:0.06,carb:9,sug:8.11,sod:37,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710447/nutrients",mode:"gram"},
-{id:"FDC-2710448",nTh:"กาแฟ, เย็น กาแฟ มอคค่า, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Iced Cafe Mocha, decaffeinated, with non-dairy milk",kw:"กาแฟ, เย็น กาแฟ มอคค่า, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Iced Cafe Mocha, decaffeinated, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:42,pro:0.55,fat:0.78,carb:8.1,sug:6.69,sod:41,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710448/nutrients",mode:"gram"},
-{id:"FDC-2710444",nTh:"กาแฟ, เย็น กาแฟ มอคค่า, ไม่มีไขมัน",nEn:"Coffee, Iced Cafe Mocha, nonfat",kw:"กาแฟ, เย็น กาแฟ มอคค่า, ไม่มีไขมัน; Coffee, Iced Cafe Mocha, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:43,pro:1.61,fat:0.07,carb:8.96,sug:8.07,sod:36,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710444/nutrients",mode:"gram"},
-{id:"FDC-2710445",nTh:"กาแฟ, เย็น กาแฟ มอคค่า, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Iced Cafe Mocha, with non-dairy milk",kw:"กาแฟ, เย็น กาแฟ มอคค่า, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Iced Cafe Mocha, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:42,pro:0.55,fat:0.78,carb:8.07,sug:6.65,sod:41,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710445/nutrients",mode:"gram"},
-{id:"FDC-2710431",nTh:"กาแฟ, เย็น ลาเต้",nEn:"Coffee, Iced Latte",kw:"กาแฟ, เย็น ลาเต้; Coffee, Iced Latte",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:27,pro:1.75,fat:1.01,carb:2.81,sug:2.51,sod:23,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710431/nutrients",mode:"gram"},
-{id:"FDC-2710437",nTh:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน",nEn:"Coffee, Iced Latte, decaffeinated",kw:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน; Coffee, Iced Latte, decaffeinated",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:27,pro:1.75,fat:1.01,carb:2.82,sug:2.53,sod:23,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710437/nutrients",mode:"gram"},
-{id:"FDC-2710440",nTh:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, แต่งรส",nEn:"Coffee, Iced Latte, decaffeinated, flavored",kw:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, แต่งรส; Coffee, Iced Latte, decaffeinated, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:40,pro:1.69,fat:0.99,carb:6.12,sug:5.84,sod:23,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710440/nutrients",mode:"gram"},
-{id:"FDC-2710438",nTh:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, ไม่มีไขมัน",nEn:"Coffee, Iced Latte, decaffeinated, nonfat",kw:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, ไม่มีไขมัน; Coffee, Iced Latte, decaffeinated, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:19,pro:1.79,fat:0.07,carb:2.83,sug:2.61,sod:25,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710438/nutrients",mode:"gram"},
-{id:"FDC-2710441",nTh:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, ไม่มีไขมัน, แต่งรส",nEn:"Coffee, Iced Latte, decaffeinated, nonfat, flavored",kw:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, ไม่มีไขมัน, แต่งรส; Coffee, Iced Latte, decaffeinated, nonfat, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:32,pro:1.73,fat:0.08,carb:6.13,sug:5.92,sod:24,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710441/nutrients",mode:"gram"},
-{id:"FDC-2710439",nTh:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Iced Latte, decaffeinated, with non-dairy milk",kw:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Iced Latte, decaffeinated, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:18,pro:0.61,fat:0.86,carb:1.86,sug:1.05,sod:30,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710439/nutrients",mode:"gram"},
-{id:"FDC-2710442",nTh:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม, แต่งรส",nEn:"Coffee, Iced Latte, decaffeinated, with non-dairy milk, flavored",kw:"กาแฟ, เย็น ลาเต้, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม, แต่งรส; Coffee, Iced Latte, decaffeinated, with non-dairy milk, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:31,pro:0.59,fat:0.84,carb:5.18,sug:4.41,sod:29,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710442/nutrients",mode:"gram"},
-{id:"FDC-2710434",nTh:"กาแฟ, เย็น ลาเต้, แต่งรส",nEn:"Coffee, Iced Latte, flavored",kw:"กาแฟ, เย็น ลาเต้, แต่งรส; Coffee, Iced Latte, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:40,pro:1.69,fat:0.98,carb:6.09,sug:5.81,sod:23,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710434/nutrients",mode:"gram"},
-{id:"FDC-2710432",nTh:"กาแฟ, เย็น ลาเต้, ไม่มีไขมัน",nEn:"Coffee, Iced Latte, nonfat",kw:"กาแฟ, เย็น ลาเต้, ไม่มีไขมัน; Coffee, Iced Latte, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:19,pro:1.78,fat:0.07,carb:2.82,sug:2.6,sod:24,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710432/nutrients",mode:"gram"},
-{id:"FDC-2710435",nTh:"กาแฟ, เย็น ลาเต้, ไม่มีไขมัน, แต่งรส",nEn:"Coffee, Iced Latte, nonfat, flavored",kw:"กาแฟ, เย็น ลาเต้, ไม่มีไขมัน, แต่งรส; Coffee, Iced Latte, nonfat, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:32,pro:1.72,fat:0.08,carb:6.1,sug:5.89,sod:24,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710435/nutrients",mode:"gram"},
-{id:"FDC-2710433",nTh:"กาแฟ, เย็น ลาเต้, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Iced Latte, with non-dairy milk",kw:"กาแฟ, เย็น ลาเต้, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Iced Latte, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:24,pro:1.36,fat:0.79,carb:2.83,sug:1.88,sod:28,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710433/nutrients",mode:"gram"},
-{id:"FDC-2710436",nTh:"กาแฟ, เย็น ลาเต้, ใส่ ไม่มีผลิตภัณฑ์นม นม, แต่งรส",nEn:"Coffee, Iced Latte, with non-dairy milk, flavored",kw:"กาแฟ, เย็น ลาเต้, ใส่ ไม่มีผลิตภัณฑ์นม นม, แต่งรส; Coffee, Iced Latte, with non-dairy milk, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:31,pro:0.59,fat:0.84,carb:5.16,sug:4.39,sod:28,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710436/nutrients",mode:"gram"},
-{id:"FDC-2710386",nTh:"กาแฟ, ลาเต้",nEn:"Coffee, Latte",kw:"กาแฟ, ลาเต้; Coffee, Latte",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:43,pro:2.81,fat:1.61,carb:4.35,sug:4.06,sod:35,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710386/nutrients",mode:"gram"},
-{id:"FDC-2710392",nTh:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน",nEn:"Coffee, Latte, decaffeinated",kw:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน; Coffee, Latte, decaffeinated",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:43,pro:2.82,fat:1.62,carb:4.37,sug:4.09,sod:35,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710392/nutrients",mode:"gram"},
-{id:"FDC-2710395",nTh:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, แต่งรส",nEn:"Coffee, Latte, decaffeinated, flavored",kw:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, แต่งรส; Coffee, Latte, decaffeinated, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:55,pro:2.73,fat:1.57,carb:7.53,sug:7.26,sod:34,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710395/nutrients",mode:"gram"},
-{id:"FDC-2710393",nTh:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, ไม่มีไขมัน",nEn:"Coffee, Latte, decaffeinated, nonfat",kw:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, ไม่มีไขมัน; Coffee, Latte, decaffeinated, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:30,pro:2.88,fat:0.1,carb:4.39,sug:4.22,sod:37,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710393/nutrients",mode:"gram"},
-{id:"FDC-2710396",nTh:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, ไม่มีไขมัน, แต่งรส",nEn:"Coffee, Latte, decaffeinated, nonfat, flavored",kw:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, ไม่มีไขมัน, แต่งรส; Coffee, Latte, decaffeinated, nonfat, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:42,pro:2.79,fat:0.1,carb:7.54,sug:7.38,sod:35,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710396/nutrients",mode:"gram"},
-{id:"FDC-2710394",nTh:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Latte, decaffeinated, with non-dairy milk",kw:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Latte, decaffeinated, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:28,pro:0.97,fat:1.37,carb:2.82,sug:1.7,sod:45,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710394/nutrients",mode:"gram"},
-{id:"FDC-2710397",nTh:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม, แต่งรส",nEn:"Coffee, Latte, decaffeinated, with non-dairy milk, flavored",kw:"กาแฟ, ลาเต้, ไม่มีคาเฟอีน, ใส่ ไม่มีผลิตภัณฑ์นม นม, แต่งรส; Coffee, Latte, decaffeinated, with non-dairy milk, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:40,pro:0.94,fat:1.33,carb:6.01,sug:4.94,sod:43,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710397/nutrients",mode:"gram"},
-{id:"FDC-2710389",nTh:"กาแฟ, ลาเต้, แต่งรส",nEn:"Coffee, Latte, flavored",kw:"กาแฟ, ลาเต้, แต่งรส; Coffee, Latte, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:55,pro:2.72,fat:1.57,carb:7.49,sug:7.22,sod:34,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710389/nutrients",mode:"gram"},
-{id:"FDC-2710387",nTh:"กาแฟ, ลาเต้, ไม่มีไขมัน",nEn:"Coffee, Latte, nonfat",kw:"กาแฟ, ลาเต้, ไม่มีไขมัน; Coffee, Latte, nonfat",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:30,pro:2.87,fat:0.1,carb:4.37,sug:4.2,sod:36,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710387/nutrients",mode:"gram"},
-{id:"FDC-2710390",nTh:"กาแฟ, ลาเต้, ไม่มีไขมัน, แต่งรส",nEn:"Coffee, Latte, nonfat, flavored",kw:"กาแฟ, ลาเต้, ไม่มีไขมัน, แต่งรส; Coffee, Latte, nonfat, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:42,pro:2.78,fat:0.1,carb:7.51,sug:7.35,sod:35,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710390/nutrients",mode:"gram"},
-{id:"FDC-2710388",nTh:"กาแฟ, ลาเต้, ใส่ ไม่มีผลิตภัณฑ์นม นม",nEn:"Coffee, Latte, with non-dairy milk",kw:"กาแฟ, ลาเต้, ใส่ ไม่มีผลิตภัณฑ์นม นม; Coffee, Latte, with non-dairy milk",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:28,pro:0.97,fat:1.36,carb:2.81,sug:1.69,sod:44,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710388/nutrients",mode:"gram"},
-{id:"FDC-2710391",nTh:"กาแฟ, ลาเต้, ใส่ ไม่มีผลิตภัณฑ์นม นม, แต่งรส",nEn:"Coffee, Latte, with non-dairy milk, flavored",kw:"กาแฟ, ลาเต้, ใส่ ไม่มีผลิตภัณฑ์นม นม, แต่งรส; Coffee, Latte, with non-dairy milk, flavored",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:40,pro:0.94,fat:1.33,carb:5.99,sug:4.91,sod:43,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710391/nutrients",mode:"gram"},
-{id:"FDC-2710374",nTh:"กาแฟ, ไม่ระบุรายละเอียด ตาม ถึง ชง หรือ สำเร็จรูป",nEn:"Coffee, NS as to brewed or instant",kw:"กาแฟ, ไม่ระบุรายละเอียด ตาม ถึง ชง หรือ สำเร็จรูป; Coffee, NS as to brewed or instant",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:1,pro:0.12,fat:0.02,carb:0,sug:0,sod:2,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710374/nutrients",mode:"gram"},
-{id:"FDC-2710451",nTh:"กาแฟ, ไม่ระบุรายละเอียด ตาม ถึง ชง หรือ สำเร็จรูป, ไม่มีคาเฟอีน",nEn:"Coffee, NS as to brewed or instant, decaffeinated",kw:"กาแฟ, ไม่ระบุรายละเอียด ตาม ถึง ชง หรือ สำเร็จรูป, ไม่มีคาเฟอีน; Coffee, NS as to brewed or instant, decaffeinated",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:0,pro:0.1,fat:0,carb:0,sug:0,sod:2,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710451/nutrients",mode:"gram"},
-{id:"FDC-2710373",nTh:"กาแฟ, ไม่ระบุรายละเอียด ตาม ถึง ชนิด",nEn:"Coffee, NS as to type",kw:"กาแฟ, ไม่ระบุรายละเอียด ตาม ถึง ชนิด; Coffee, NS as to type",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:1,pro:0.12,fat:0.02,carb:0,sug:0,sod:2,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710373/nutrients",mode:"gram"},
-{id:"FDC-2710377",nTh:"กาแฟ, ตุรกี",nEn:"Coffee, Turkish",kw:"กาแฟ, ตุรกี; Coffee, Turkish",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:27,pro:0.11,fat:0.04,carb:6.47,sug:6.48,sod:2,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710377/nutrients",mode:"gram"},
-{id:"FDC-2710478",nTh:"กาแฟ, บรรจุขวด/กระป๋อง",nEn:"Coffee, bottled/canned",kw:"กาแฟ, บรรจุขวด/กระป๋อง; Coffee, bottled/canned",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:71,pro:1.98,fat:1.38,carb:12.6,sug:10.67,sod:26,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710478/nutrients",mode:"gram"},
-{id:"FDC-2710479",nTh:"กาแฟ, บรรจุขวด/กระป๋อง, สูตรเบา",nEn:"Coffee, bottled/canned, light",kw:"กาแฟ, บรรจุขวด/กระป๋อง, สูตรเบา; Coffee, bottled/canned, light",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:35,pro:1.27,fat:0.7,carb:5.91,sug:5.91,sod:15,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710479/nutrients",mode:"gram"},
-{id:"FDC-2710375",nTh:"กาแฟ, ชง",nEn:"Coffee, brewed",kw:"กาแฟ, ชง; Coffee, brewed",grp:"ไทย/นิยมในประเทศไทย",cat:"กาแฟ",refAmt:100,refUnit:"กรัม",refG:100,kcal:1,pro:0.12,fat:0.02,carb:0,sug:0,sod:2,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2710375/nutrients",mode:"gram"},
 {id:"FDC-2708963",nTh:"ซูชิโรลแซลมอน",nEn:"Sushi roll, salmon",kw:"ซูชิโรลแซลมอน; Sushi roll, salmon",grp:"อาหารญี่ปุ่น",cat:"ปอเปี๊ยะ เกี๊ยว และซูชิ",refAmt:100,refUnit:"กรัม",refG:100,kcal:103,pro:6.88,fat:1.28,carb:15.3,sug:0.92,sod:350,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2708963/nutrients",mode:"gram"},
 {id:"FDC-2708969",nTh:"ซูชิหน้าแซลมอน",nEn:"Sushi, topped with salmon",kw:"ซูชิหน้าแซลมอน; Sushi, topped with salmon",grp:"อาหารญี่ปุ่น",cat:"ปอเปี๊ยะ เกี๊ยว และซูชิ",refAmt:100,refUnit:"กรัม",refG:100,kcal:107,pro:8.92,fat:1.74,carb:13.4,sug:0.8,sod:317,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2708969/nutrients",mode:"gram"},
 {id:"FDC-2706844",nTh:"เทมปุระปลา เต้าหู้ และผัก",nEn:"Fish, tofu, and vegetables, tempura",kw:"เทมปุระปลา เต้าหู้ และผัก; Fish, tofu, and vegetables, tempura",grp:"อาหารญี่ปุ่น",cat:"อาหารจานผสมประเภทอาหารทะเล",refAmt:100,refUnit:"กรัม",refG:100,kcal:177,pro:4.01,fat:16,carb:4.53,sug:1.56,sod:22,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2706844/nutrients",mode:"gram"},
@@ -2097,6 +2097,123 @@ const FOOD_DB = [
 {id:"FDC-2706791",nTh:"ไก่หรือไก่งวง และ ผัก ไม่รวมแครอท บรอกโคลี และ ผักใบเขียวเข้ม; ไม่มีมันฝรั่ง, ซอสถั่วเหลือง",nEn:"Chicken or turkey and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, soy-based sauce",kw:"ไก่หรือไก่งวง และ ผัก ไม่รวมแครอท บรอกโคลี และ ผักใบเขียวเข้ม; ไม่มีมันฝรั่ง, ซอสถั่วเหลือง; Chicken or turkey and vegetables excluding carrots, broccoli, and dark-green leafy; no potatoes, soy-based sauce",grp:"อาหารจีน",cat:"อาหารผัดและซอสถั่วเหลือง",refAmt:100,refUnit:"กรัม",refG:100,kcal:133,pro:10.7,fat:8.22,carb:4.39,sug:1.62,sod:352,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2706791/nutrients",mode:"gram"},
 {id:"FDC-2706790",nTh:"ไก่หรือไก่งวง และ ผัก รวมแครอท บรอกโคลี และ/หรือ ผักใบเขียวเข้ม; ไม่มีมันฝรั่ง, ซอสถั่วเหลือง",nEn:"Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce",kw:"ไก่หรือไก่งวง และ ผัก รวมแครอท บรอกโคลี และ/หรือ ผักใบเขียวเข้ม; ไม่มีมันฝรั่ง, ซอสถั่วเหลือง; Chicken or turkey and vegetables including carrots, broccoli, and/or dark-green leafy; no potatoes, soy-based sauce",grp:"อาหารจีน",cat:"อาหารผัดและซอสถั่วเหลือง",refAmt:100,refUnit:"กรัม",refG:100,kcal:95,pro:8.18,fat:4.56,carb:5.38,sug:2.93,sod:413,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2706790/nutrients",mode:"gram"},
 {id:"FDC-2706696",nTh:"ไก่หรือไก่งวง, ข้าว, และ ผัก ไม่รวมแครอท บรอกโคลี และ ผักใบเขียวเข้ม; ซอสถั่วเหลือง",nEn:"Chicken or turkey, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; soy-based sauce",kw:"ไก่หรือไก่งวง, ข้าว, และ ผัก ไม่รวมแครอท บรอกโคลี และ ผักใบเขียวเข้ม; ซอสถั่วเหลือง; Chicken or turkey, rice, and vegetables excluding carrots, broccoli, and dark-green leafy; soy-based sauce",grp:"อาหารจีน",cat:"อาหารผัดและซอสถั่วเหลือง",refAmt:100,refUnit:"กรัม",refG:100,kcal:133,pro:9.64,fat:7.15,carb:7.79,sug:1.41,sod:305,conf:"reference",ref:true,src:"USDA FoodData Central (FNDDS 2021–2023)",url:"https://fdc.nal.usda.gov/fdc-app.html#/food-details/2706696/nutrients",mode:"gram"},
+{id:"COFFEE-01",nTh:"กาแฟดำร้อน",nEn:"",kw:"กาแฟดำร้อน",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:5,pro:0.3,fat:0,carb:0.5,sug:0,sod:5,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-02",nTh:"กาแฟดำเย็น",nEn:"",kw:"กาแฟดำเย็น",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:10,pro:0.3,fat:0,carb:1.5,sug:0,sod:5,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-03",nTh:"อเมริกาโน่",nEn:"",kw:"อเมริกาโน่ กาแฟ",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:10,pro:0.5,fat:0,carb:1.5,sug:0,sod:10,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-04",nTh:"เอสเพรสโซ่ (1 ช็อต)",nEn:"",kw:"เอสเพรสโซ่ (1 ช็อต) กาแฟ",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:3,pro:0.2,fat:0,carb:0.5,sug:0,sod:5,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-05",nTh:"ลาเต้ร้อน (นมสด)",nEn:"",kw:"ลาเต้ร้อน (นมสด) กาแฟ",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:150,pro:8,fat:8,carb:12,sug:12,sod:115,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-06",nTh:"ลาเต้เย็น (นมสด)",nEn:"",kw:"ลาเต้เย็น (นมสด) กาแฟ",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:180,pro:7,fat:7,carb:20,sug:18,sod:100,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-07",nTh:"คาปูชิโน่",nEn:"",kw:"คาปูชิโน่ กาแฟ",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:120,pro:6,fat:6,carb:10,sug:9,sod:95,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-08",nTh:"มอคค่าร้อน",nEn:"",kw:"มอคค่าร้อน กาแฟ",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:230,pro:8,fat:9,carb:30,sug:27,sod:115,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-09",nTh:"มอคค่าเย็น",nEn:"",kw:"มอคค่าเย็น กาแฟ",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:260,pro:7,fat:8,carb:38,sug:33,sod:105,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-10",nTh:"กาแฟเย็นไทย (นมข้นหวาน)",nEn:"",kw:"กาแฟเย็นไทย (นมข้นหวาน)",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:200,pro:3,fat:6,carb:32,sug:30,sod:60,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"COFFEE-11",nTh:"กาแฟโบราณ (นมข้นจืด)",nEn:"",kw:"กาแฟโบราณ (นมข้นจืด)",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:90,pro:2,fat:3,carb:12,sug:10,sod:40,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูกาแฟยอดนิยม",url:"",mode:"serving"},
+{id:"BT-01",nTh:"ชานมไข่มุก (หวานปกติ)",nEn:"",kw:"ชานมไข่มุก (หวานปกติ) บับเบิ้ล บับเบิลที ไข่มุก",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:450,pro:4,fat:12,carb:75,sug:48,sod:150,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BT-02",nTh:"ชานมไข่มุก (หวานน้อย)",nEn:"",kw:"ชานมไข่มุก (หวานน้อย) บับเบิ้ล บับเบิลที ไข่มุก",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:360,pro:4,fat:10,carb:58,sug:32,sod:140,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BT-03",nTh:"ชาไทยไข่มุก",nEn:"",kw:"ชาไทยไข่มุก บับเบิ้ล บับเบิลที",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:430,pro:3,fat:11,carb:72,sug:42,sod:120,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BT-04",nTh:"ชาเขียวไข่มุกนมสด",nEn:"",kw:"ชาเขียวไข่มุกนมสด บับเบิ้ล บับเบิลที",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:400,pro:4,fat:10,carb:68,sug:38,sod:110,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BT-05",nTh:"โกโก้ไข่มุกนมสด",nEn:"",kw:"โกโก้ไข่มุกนมสด บับเบิ้ล บับเบิลที",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:480,pro:6,fat:15,carb:75,sug:45,sod:180,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BT-06",nTh:"ทีลาเต้ไข่มุก",nEn:"",kw:"ทีลาเต้ไข่มุก บับเบิ้ล บับเบิลที",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:390,pro:4,fat:9,carb:68,sug:36,sod:120,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BT-07",nTh:"บราวน์ชูการ์ไข่มุกนมสด",nEn:"",kw:"บราวน์ชูการ์ไข่มุกนมสด บับเบิ้ล บับเบิลที",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:470,pro:5,fat:13,carb:78,sug:50,sod:140,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BT-08",nTh:"ชานมไต้หวันร้อน (ไม่ใส่ไข่มุก)",nEn:"",kw:"ชานมไต้หวันร้อน (ไม่ใส่ไข่มุก) บับเบิ้ล บับเบิลที",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"แก้ว",refG:null,kcal:220,pro:3,fat:7,carb:34,sug:28,sod:95,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SHABU-01",nTh:"หมูสไลซ์สำหรับชาบู/หมูกระทะ",nEn:"",kw:"หมูสไลซ์สำหรับชาบู/หมูกระทะ ชาบู หมูกระทะ",grp:"ไทย/ทั่วไป",cat:"เนื้อสัตว์ดิบ",refAmt:100,refUnit:"กรัม",refG:100,kcal:240,pro:18,fat:18,carb:0,sug:0,sod:60,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"gram"},
+{id:"SHABU-02",nTh:"เนื้อวัวสไลซ์สำหรับชาบู/หมูกระทะ",nEn:"",kw:"เนื้อวัวสไลซ์สำหรับชาบู/หมูกระทะ ชาบู หมูกระทะ",grp:"ไทย/ทั่วไป",cat:"เนื้อสัตว์ดิบ",refAmt:100,refUnit:"กรัม",refG:100,kcal:210,pro:20,fat:14,carb:0,sug:0,sod:55,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"gram"},
+{id:"SHABU-03",nTh:"ลูกชิ้นปลาสำหรับชาบู/หมูกระทะ (5 ลูก)",nEn:"",kw:"ลูกชิ้นปลาสำหรับชาบู/หมูกระทะ (5 ลูก) ชาบู หมูกระทะ",grp:"ไทย/ทั่วไป",cat:"เนื้อสัตว์แปรรูป",refAmt:5,refUnit:"ลูก",refG:null,kcal:80,pro:8,fat:2,carb:6,sug:1,sod:420,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SHABU-04",nTh:"ลูกชิ้นหมูสำหรับชาบู/หมูกระทะ (5 ลูก)",nEn:"",kw:"ลูกชิ้นหมูสำหรับชาบู/หมูกระทะ (5 ลูก) ชาบู หมูกระทะ",grp:"ไทย/ทั่วไป",cat:"เนื้อสัตว์แปรรูป",refAmt:5,refUnit:"ลูก",refG:null,kcal:120,pro:7,fat:8,carb:5,sug:1,sod:450,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SHABU-05",nTh:"วุ้นเส้นลวก (สำหรับชาบู)",nEn:"",kw:"วุ้นเส้นลวก (สำหรับชาบู) ชาบู หมูกระทะ",grp:"ไทย/ทั่วไป",cat:"เส้น",refAmt:1,refUnit:"ถ้วย",refG:null,kcal:80,pro:0.2,fat:0.1,carb:20,sug:0,sod:10,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SHABU-06",nTh:"ผักรวมสำหรับชาบู/หมูกระทะ (1 จาน)",nEn:"",kw:"ผักรวมสำหรับชาบู/หมูกระทะ (1 จาน) ชาบู หมูกระทะ",grp:"ไทย/ทั่วไป",cat:"ผัก",refAmt:1,refUnit:"จาน",refG:null,kcal:40,pro:2,fat:0.3,carb:8,sug:3,sod:15,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SHABU-07",nTh:"น้ำจิ้มสุกี้",nEn:"",kw:"น้ำจิ้มสุกี้ ชาบู หมูกระทะ",grp:"ไทย/ทั่วไป",cat:"น้ำจิ้ม",refAmt:2,refUnit:"ช้อนโต๊ะ",refG:null,kcal:60,pro:1,fat:0.5,carb:13,sug:10,sod:450,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SHABU-08",nTh:"น้ำจิ้มหมูกระทะ (แจ่ว)",nEn:"",kw:"น้ำจิ้มหมูกระทะ (แจ่ว) ชาบู หมูกระทะ",grp:"ไทย/ทั่วไป",cat:"น้ำจิ้ม",refAmt:2,refUnit:"ช้อนโต๊ะ",refG:null,kcal:70,pro:1,fat:0.5,carb:15,sug:8,sod:520,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-01",nTh:"บิ๊กแมค (McDonald\u2019s)",nEn:"",kw:"บิ๊กแมค (McDonald\u2019s) แมคโดนัลด์ แมค",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:550,pro:25,fat:30,carb:45,sug:9,sod:1010,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-02",nTh:"แมคชิคเก้น (McDonald\u2019s)",nEn:"",kw:"แมคชิคเก้น (McDonald\u2019s) แมคโดนัลด์ แมค",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:400,pro:15,fat:20,carb:42,sug:6,sod:780,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-03",nTh:"เฟรนช์ฟราย ขนาดกลาง (McDonald\u2019s)",nEn:"",kw:"เฟรนช์ฟราย ขนาดกลาง (McDonald\u2019s) แมคโดนัลด์ แมค เฟรนช์ฟราย มันฝรั่งทอด",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"ที่",refG:null,kcal:340,pro:4,fat:16,carb:44,sug:0.3,sod:260,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-04",nTh:"แมคนักเก็ต 6 ชิ้น (McDonald\u2019s)",nEn:"",kw:"แมคนักเก็ต 6 ชิ้น (McDonald\u2019s) แมคโดนัลด์ แมค นักเก็ต",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:6,refUnit:"ชิ้น",refG:null,kcal:270,pro:13,fat:17,carb:15,sug:0,sod:540,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-05",nTh:"ไอศกรีมโคน (McDonald\u2019s)",nEn:"",kw:"ไอศกรีมโคน (McDonald\u2019s) แมคโดนัลด์ แมค ไอติม",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"โคน",refG:null,kcal:150,pro:4,fat:4,carb:24,sug:20,sod:60,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-06",nTh:"ไก่ทอดออริจินัล 1 ชิ้น (KFC)",nEn:"",kw:"ไก่ทอดออริจินัล 1 ชิ้น (KFC) เคเอฟซี",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:280,pro:20,fat:18,carb:10,sug:0,sod:690,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-07",nTh:"ไก่ทอดฮอทแอนด์สไปซี่ 1 ชิ้น (KFC)",nEn:"",kw:"ไก่ทอดฮอทแอนด์สไปซี่ 1 ชิ้น (KFC) เคเอฟซี",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:300,pro:19,fat:20,carb:12,sug:0,sod:720,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-08",nTh:"เบอร์เกอร์ไก่ซิกเนเจอร์ (KFC)",nEn:"",kw:"เบอร์เกอร์ไก่ซิกเนเจอร์ (KFC) เคเอฟซี",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:450,pro:22,fat:22,carb:42,sug:6,sod:890,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-09",nTh:"ข้าวเหนียว (KFC)",nEn:"",kw:"ข้าวเหนียว (KFC) เคเอฟซี",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"ห่อ",refG:null,kcal:130,pro:2,fat:0.3,carb:30,sug:0,sod:5,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-10",nTh:"พิซซ่าฮาวายเอี้ยน 1 ชิ้น",nEn:"",kw:"พิซซ่าฮาวายเอี้ยน 1 ชิ้น พิซซ่า",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:220,pro:10,fat:8,carb:28,sug:4,sod:480,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"FF-11",nTh:"พิซซ่าเปปเปอโรนี 1 ชิ้น",nEn:"",kw:"พิซซ่าเปปเปอโรนี 1 ชิ้น พิซซ่า",grp:"ไทย/ทั่วไป",cat:"ฟาสต์ฟู้ด",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:260,pro:12,fat:12,carb:26,sug:3,sod:560,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-01",nTh:"ขนมชั้น (1 ชิ้น)",nEn:"",kw:"ขนมชั้น (1 ชิ้น) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:120,pro:1,fat:3,carb:22,sug:16,sod:15,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-02",nTh:"ทับทิมกรอบ (1 ถ้วย)",nEn:"",kw:"ทับทิมกรอบ (1 ถ้วย) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:1,refUnit:"ถ้วย",refG:null,kcal:200,pro:1,fat:6,carb:36,sug:28,sod:20,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-03",nTh:"บัวลอยไข่หวาน (1 ถ้วย)",nEn:"",kw:"บัวลอยไข่หวาน (1 ถ้วย) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:1,refUnit:"ถ้วย",refG:null,kcal:220,pro:4,fat:7,carb:34,sug:20,sod:60,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-04",nTh:"ลอดช่องสิงคโปร์ (1 ถ้วย)",nEn:"",kw:"ลอดช่องสิงคโปร์ (1 ถ้วย) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:1,refUnit:"ถ้วย",refG:null,kcal:180,pro:1,fat:5,carb:32,sug:24,sod:15,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-05",nTh:"ขนมครก (3 ชิ้น)",nEn:"",kw:"ขนมครก (3 ชิ้น) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:3,refUnit:"ชิ้น",refG:null,kcal:150,pro:2,fat:7,carb:20,sug:12,sod:60,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-06",nTh:"ขนมถ้วย (3 ถ้วย)",nEn:"",kw:"ขนมถ้วย (3 ถ้วย) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:3,refUnit:"ถ้วย",refG:null,kcal:130,pro:1,fat:5,carb:20,sug:14,sod:25,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-07",nTh:"ตะโก้เผือก (2 ชิ้น)",nEn:"",kw:"ตะโก้เผือก (2 ชิ้น) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:2,refUnit:"ชิ้น",refG:null,kcal:140,pro:1,fat:5,carb:23,sug:16,sod:30,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-08",nTh:"กล้วยบวชชี (1 ถ้วย)",nEn:"",kw:"กล้วยบวชชี (1 ถ้วย) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:1,refUnit:"ถ้วย",refG:null,kcal:210,pro:2,fat:7,carb:36,sug:26,sod:45,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-09",nTh:"สังขยาฟักทอง (1 ชิ้น)",nEn:"",kw:"สังขยาฟักทอง (1 ชิ้น) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:180,pro:5,fat:8,carb:22,sug:18,sod:70,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"THSW-10",nTh:"ข้าวเหนียวสังขยา (1 ห่อ)",nEn:"",kw:"ข้าวเหนียวสังขยา (1 ห่อ) ขนมหวาน ของหวาน",grp:"ไทย/ทั่วไป",cat:"ขนมหวานไทย",refAmt:1,refUnit:"ห่อ",refG:null,kcal:280,pro:5,fat:8,carb:48,sug:22,sod:90,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"AS-01",nTh:"ผัดกระเพราหมูสับ ราดข้าว",nEn:"",kw:"ผัดกระเพราหมูสับ ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:600,pro:26,fat:22,carb:72,sug:3,sod:950,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-02",nTh:"ผัดกระเพราหมูสับ ไข่ดาว",nEn:"",kw:"ผัดกระเพราหมูสับ ไข่ดาว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:690,pro:32,fat:29,carb:72,sug:3,sod:980,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-03",nTh:"ผัดกระเพราไก่ ราดข้าว",nEn:"",kw:"ผัดกระเพราไก่ ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:560,pro:28,fat:16,carb:72,sug:3,sod:900,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-04",nTh:"ผัดกระเพราไก่ ไข่ดาว",nEn:"",kw:"ผัดกระเพราไก่ ไข่ดาว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:650,pro:34,fat:23,carb:72,sug:3,sod:930,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-05",nTh:"ผัดกระเพราเนื้อ ราดข้าว",nEn:"",kw:"ผัดกระเพราเนื้อ ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:590,pro:27,fat:20,carb:72,sug:3,sod:920,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-06",nTh:"ผัดกระเพรากุ้ง ราดข้าว",nEn:"",kw:"ผัดกระเพรากุ้ง ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:540,pro:24,fat:14,carb:72,sug:3,sod:950,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-07",nTh:"ผัดกระเพราหมูกรอบ ราดข้าว",nEn:"",kw:"ผัดกระเพราหมูกรอบ ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:720,pro:24,fat:38,carb:72,sug:3,sod:1050,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-08",nTh:"ผัดพริกแกงหมู ราดข้าว",nEn:"",kw:"ผัดพริกแกงหมู ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:580,pro:24,fat:22,carb:70,sug:4,sod:880,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-09",nTh:"ผัดพริกแกงไก่ ราดข้าว",nEn:"",kw:"ผัดพริกแกงไก่ ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:550,pro:26,fat:16,carb:70,sug:4,sod:850,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-10",nTh:"ผัดขี้เมาหมู ราดข้าว",nEn:"",kw:"ผัดขี้เมาหมู ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:600,pro:22,fat:24,carb:72,sug:4,sod:950,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-11",nTh:"ผัดขี้เมาทะเล ราดข้าว",nEn:"",kw:"ผัดขี้เมาทะเล ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:560,pro:24,fat:16,carb:72,sug:4,sod:980,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-12",nTh:"ผัดกระเทียมพริกไทยหมู ราดข้าว",nEn:"",kw:"ผัดกระเทียมพริกไทยหมู ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:570,pro:26,fat:20,carb:70,sug:2,sod:850,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-13",nTh:"ผัดกระเทียมพริกไทยไก่ ราดข้าว",nEn:"",kw:"ผัดกระเทียมพริกไทยไก่ ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:540,pro:28,fat:14,carb:70,sug:2,sod:820,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-14",nTh:"ราดหน้าหมู",nEn:"",kw:"ราดหน้าหมู อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:620,pro:24,fat:18,carb:85,sug:5,sod:950,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-15",nTh:"ราดหน้าทะเล",nEn:"",kw:"ราดหน้าทะเล อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:580,pro:22,fat:12,carb:85,sug:5,sod:980,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-16",nTh:"ผัดซีอิ๊วหมู",nEn:"",kw:"ผัดซีอิ๊วหมู อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:650,pro:24,fat:20,carb:88,sug:6,sod:1000,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-17",nTh:"ผัดซีอิ๊วไก่",nEn:"",kw:"ผัดซีอิ๊วไก่ อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:610,pro:26,fat:14,carb:88,sug:6,sod:970,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-18",nTh:"ผัดเปรี้ยวหวานหมู",nEn:"",kw:"ผัดเปรี้ยวหวานหมู อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:570,pro:22,fat:16,carb:74,sug:12,sod:780,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-19",nTh:"ผัดเปรี้ยวหวานไก่",nEn:"",kw:"ผัดเปรี้ยวหวานไก่ อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:540,pro:24,fat:12,carb:74,sug:12,sod:760,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-20",nTh:"ต้มยำกุ้ง (น้ำข้น) 1 ถ้วย",nEn:"",kw:"ต้มยำกุ้ง (น้ำข้น) 1 ถ้วย อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:280,pro:18,fat:16,carb:14,sug:4,sod:1450,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-21",nTh:"ต้มยำหมู 1 ถ้วย",nEn:"",kw:"ต้มยำหมู 1 ถ้วย อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:260,pro:16,fat:15,carb:12,sug:3,sod:1400,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-22",nTh:"ต้มข่าไก่ 1 ถ้วย",nEn:"",kw:"ต้มข่าไก่ 1 ถ้วย อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:320,pro:16,fat:24,carb:10,sug:4,sod:1200,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-23",nTh:"แกงเผ็ดหมู ราดข้าว",nEn:"",kw:"แกงเผ็ดหมู ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:610,pro:22,fat:26,carb:68,sug:4,sod:900,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-24",nTh:"น้ำตกหมู 1 จาน",nEn:"",kw:"น้ำตกหมู 1 จาน อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:280,pro:24,fat:16,carb:10,sug:3,sod:850,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-25",nTh:"น้ำตกเนื้อ 1 จาน",nEn:"",kw:"น้ำตกเนื้อ 1 จาน อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:270,pro:25,fat:14,carb:10,sug:3,sod:830,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-26",nTh:"ลาบหมู 1 จาน",nEn:"",kw:"ลาบหมู 1 จาน อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:260,pro:22,fat:14,carb:10,sug:2,sod:800,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-27",nTh:"ลาบไก่ 1 จาน",nEn:"",kw:"ลาบไก่ 1 จาน อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:240,pro:24,fat:10,carb:10,sug:2,sod:780,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-28",nTh:"ยำวุ้นเส้น 1 จาน",nEn:"",kw:"ยำวุ้นเส้น 1 จาน อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:220,pro:12,fat:8,carb:26,sug:6,sod:850,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-29",nTh:"ยำทะเลรวมมิตร 1 จาน",nEn:"",kw:"ยำทะเลรวมมิตร 1 จาน อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:250,pro:20,fat:8,carb:18,sug:8,sod:950,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-30",nTh:"ผัดฉ่าหมู ราดข้าว",nEn:"",kw:"ผัดฉ่าหมู ราดข้าว อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:600,pro:24,fat:24,carb:68,sug:4,sod:900,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-31",nTh:"คั่วกลิ้งหมู 1 จาน",nEn:"",kw:"คั่วกลิ้งหมู 1 จาน อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:350,pro:22,fat:24,carb:8,sug:2,sod:900,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"AS-32",nTh:"ข้าวผัดกระเพราหมูสับ 1 จาน",nEn:"",kw:"ข้าวผัดกระเพราหมูสับ 1 จาน อาหารตามสั่ง",grp:"ไทย/ทั่วไป",cat:"อาหารตามสั่ง",refAmt:1,refUnit:"จาน",refG:null,kcal:620,pro:24,fat:22,carb:78,sug:3,sod:900,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูตามสั่งยอดนิยม",url:"",mode:"serving"},
+{id:"SOM-01",nTh:"ส้มตำไทย (ไม่ใส่ปู)",nEn:"",kw:"ส้มตำไทย (ไม่ใส่ปู) ส้มตำ ตำ",grp:"ไทย/ทั่วไป",cat:"ยำ/ส้มตำ",refAmt:1,refUnit:"จาน",refG:null,kcal:110,pro:2,fat:1,carb:24,sug:14,sod:1100,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SOM-02",nTh:"ส้มตำปูปลาร้า",nEn:"",kw:"ส้มตำปูปลาร้า ส้มตำ ตำ",grp:"ไทย/ทั่วไป",cat:"ยำ/ส้มตำ",refAmt:1,refUnit:"จาน",refG:null,kcal:130,pro:4,fat:1,carb:24,sug:12,sod:1600,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SOM-03",nTh:"ตำถั่ว",nEn:"",kw:"ตำถั่ว ส้มตำ ตำ",grp:"ไทย/ทั่วไป",cat:"ยำ/ส้มตำ",refAmt:1,refUnit:"จาน",refG:null,kcal:140,pro:4,fat:3,carb:22,sug:12,sod:1050,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SOM-04",nTh:"ตำแตง",nEn:"",kw:"ตำแตง ส้มตำ ตำ",grp:"ไทย/ทั่วไป",cat:"ยำ/ส้มตำ",refAmt:1,refUnit:"จาน",refG:null,kcal:100,pro:2,fat:1,carb:20,sug:12,sod:1000,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SOM-05",nTh:"ส้มตำข้าวโพด",nEn:"",kw:"ส้มตำข้าวโพด ส้มตำ ตำ",grp:"ไทย/ทั่วไป",cat:"ยำ/ส้มตำ",refAmt:1,refUnit:"จาน",refG:null,kcal:120,pro:2,fat:1,carb:26,sug:15,sod:1000,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"SOM-06",nTh:"ส้มตำไทยใส่กุ้งแห้ง",nEn:"",kw:"ส้มตำไทยใส่กุ้งแห้ง ส้มตำ ตำ",grp:"ไทย/ทั่วไป",cat:"ยำ/ส้มตำ",refAmt:1,refUnit:"จาน",refG:null,kcal:130,pro:4,fat:1,carb:24,sug:14,sod:1150,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"ENG-01",nTh:"กระทิงแดง (1 ขวด)",nEn:"",kw:"กระทิงแดง (1 ขวด) ชูกำลัง เครื่องดื่มชูกำลัง",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"ขวด",refG:null,kcal:140,pro:0,fat:0,carb:35,sug:34,sod:140,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"ENG-02",nTh:"เอ็ม-150 (1 ขวด)",nEn:"",kw:"เอ็ม-150 (1 ขวด) ชูกำลัง เครื่องดื่มชูกำลัง",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"ขวด",refG:null,kcal:130,pro:0,fat:0,carb:32,sug:31,sod:120,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"ENG-03",nTh:"ลิโพ (1 ขวด)",nEn:"",kw:"ลิโพ (1 ขวด) ชูกำลัง เครื่องดื่มชูกำลัง",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"ขวด",refG:null,kcal:120,pro:0,fat:0,carb:30,sug:29,sod:110,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"ENG-04",nTh:"คาราบาวแดง (1 ขวด)",nEn:"",kw:"คาราบาวแดง (1 ขวด) ชูกำลัง เครื่องดื่มชูกำลัง",grp:"ไทย/ทั่วไป",cat:"เครื่องดื่ม",refAmt:1,refUnit:"ขวด",refG:null,kcal:140,pro:0,fat:0,carb:35,sug:34,sod:130,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"GRILL-01",nTh:"ลูกชิ้นหมูปิ้ง (5 ไม้)",nEn:"",kw:"ลูกชิ้นหมูปิ้ง (5 ไม้) ลูกชิ้นปิ้ง ปิ้งย่าง",grp:"ไทย/ทั่วไป",cat:"ปิ้งย่าง",refAmt:5,refUnit:"ไม้",refG:null,kcal:180,pro:10,fat:10,carb:12,sug:4,sod:650,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"GRILL-02",nTh:"ลูกชิ้นเนื้อปิ้ง (5 ไม้)",nEn:"",kw:"ลูกชิ้นเนื้อปิ้ง (5 ไม้) ลูกชิ้นปิ้ง ปิ้งย่าง",grp:"ไทย/ทั่วไป",cat:"ปิ้งย่าง",refAmt:5,refUnit:"ไม้",refG:null,kcal:170,pro:11,fat:9,carb:11,sug:4,sod:630,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"GRILL-03",nTh:"หมูปิ้ง (5 ไม้)",nEn:"",kw:"หมูปิ้ง (5 ไม้) ปิ้งย่าง",grp:"ไทย/ทั่วไป",cat:"ปิ้งย่าง",refAmt:5,refUnit:"ไม้",refG:null,kcal:280,pro:22,fat:18,carb:8,sug:6,sod:750,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"GRILL-04",nTh:"คอหมูย่าง (1 จาน)",nEn:"",kw:"คอหมูย่าง (1 จาน) ปิ้งย่าง",grp:"ไทย/ทั่วไป",cat:"ปิ้งย่าง",refAmt:1,refUnit:"จาน",refG:null,kcal:320,pro:26,fat:22,carb:5,sug:3,sod:700,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"GRILL-05",nTh:"ไก่ย่าง (1/4 ตัว)",nEn:"",kw:"ไก่ย่าง (1/4 ตัว) ปิ้งย่าง",grp:"ไทย/ทั่วไป",cat:"ปิ้งย่าง",refAmt:1,refUnit:"ส่วน",refG:null,kcal:380,pro:35,fat:24,carb:2,sug:1,sod:780,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"GRILL-06",nTh:"ปีกไก่ย่าง (3 ชิ้น)",nEn:"",kw:"ปีกไก่ย่าง (3 ชิ้น) ปิ้งย่าง",grp:"ไทย/ทั่วไป",cat:"ปิ้งย่าง",refAmt:3,refUnit:"ชิ้น",refG:null,kcal:290,pro:22,fat:20,carb:3,sug:1,sod:650,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"ICE-01",nTh:"ไอศกรีมกะทิ (1 ถ้วย)",nEn:"",kw:"ไอศกรีมกะทิ (1 ถ้วย) ไอศกรีม ไอติม",grp:"ไทย/ทั่วไป",cat:"ของหวาน",refAmt:1,refUnit:"ถ้วย",refG:null,kcal:200,pro:3,fat:12,carb:22,sug:18,sod:40,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"ICE-03",nTh:"ไอศกรีมช็อกโกแลต (1 สกู๊ป)",nEn:"",kw:"ไอศกรีมช็อกโกแลต (1 สกู๊ป) ไอศกรีม ไอติม",grp:"ไทย/ทั่วไป",cat:"ของหวาน",refAmt:1,refUnit:"สกู๊ป",refG:null,kcal:150,pro:2,fat:8,carb:18,sug:16,sod:50,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"ICE-04",nTh:"ไอศกรีมแท่ง (ช็อกโกแลต)",nEn:"",kw:"ไอศกรีมแท่ง (ช็อกโกแลต) ไอศกรีม ไอติม",grp:"ไทย/ทั่วไป",cat:"ของหวาน",refAmt:1,refUnit:"แท่ง",refG:null,kcal:230,pro:3,fat:13,carb:26,sug:22,sod:60,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"ICE-05",nTh:"โฟรเซนโยเกิร์ต (1 ถ้วย)",nEn:"",kw:"โฟรเซนโยเกิร์ต (1 ถ้วย) ไอศกรีม ไอติม",grp:"ไทย/ทั่วไป",cat:"ของหวาน",refAmt:1,refUnit:"ถ้วย",refG:null,kcal:160,pro:5,fat:2,carb:32,sug:26,sod:55,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BAK-01",nTh:"แซนวิชแฮมชีส",nEn:"",kw:"แซนวิชแฮมชีส แซนวิช เบเกอรี่",grp:"ไทย/ทั่วไป",cat:"เบเกอรี่",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:280,pro:14,fat:10,carb:34,sug:5,sod:650,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BAK-02",nTh:"แซนวิชทูน่า",nEn:"",kw:"แซนวิชทูน่า แซนวิช เบเกอรี่",grp:"ไทย/ทั่วไป",cat:"เบเกอรี่",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:300,pro:15,fat:12,carb:32,sug:4,sod:600,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BAK-03",nTh:"แซนวิชไข่",nEn:"",kw:"แซนวิชไข่ แซนวิช เบเกอรี่",grp:"ไทย/ทั่วไป",cat:"เบเกอรี่",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:270,pro:11,fat:13,carb:28,sug:4,sod:520,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BAK-04",nTh:"ครัวซองต์เนย",nEn:"",kw:"ครัวซองต์เนย เบเกอรี่",grp:"ไทย/ทั่วไป",cat:"เบเกอรี่",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:280,pro:6,fat:17,carb:26,sug:7,sod:300,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"BAK-05",nTh:"โดนัทเคลือบน้ำตาล",nEn:"",kw:"โดนัทเคลือบน้ำตาล เบเกอรี่",grp:"ไทย/ทั่วไป",cat:"เบเกอรี่",refAmt:1,refUnit:"ชิ้น",refG:null,kcal:260,pro:3,fat:14,carb:30,sug:15,sod:220,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากเมนูยอดนิยม",url:"",mode:"serving"},
+{id:"MILK-01",nTh:"นมสดจืด (1 กล่อง 250ml)",nEn:"",kw:"นมสดจืด (1 กล่อง 250ml) นม นมสด",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:150,pro:8,fat:8,carb:12,sug:12,sod:100,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"MILK-02",nTh:"นมสดจืดพร่องมันเนย (1 กล่อง 250ml)",nEn:"",kw:"นมสดจืดพร่องมันเนย (1 กล่อง 250ml) นม นมสด",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:120,pro:8,fat:3,carb:12,sug:12,sod:105,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"MILK-03",nTh:"นมสดจืดขาดมันเนย (1 กล่อง 250ml)",nEn:"",kw:"นมสดจืดขาดมันเนย (1 กล่อง 250ml) นม นมสด",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:90,pro:8,fat:0.2,carb:12,sug:12,sod:105,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"MILK-04",nTh:"นมหวาน (1 กล่อง 250ml)",nEn:"",kw:"นมหวาน (1 กล่อง 250ml) นม นมสด",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:180,pro:7,fat:6,carb:25,sug:24,sod:100,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"MILK-05",nTh:"นมช็อกโกแลต (1 กล่อง 250ml)",nEn:"",kw:"นมช็อกโกแลต (1 กล่อง 250ml) นม นมสด",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:210,pro:7,fat:6,carb:30,sug:28,sod:130,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"SOY-01",nTh:"นมถั่วเหลืองรสจืดไม่หวาน (1 กล่อง 250ml)",nEn:"",kw:"นมถั่วเหลืองรสจืดไม่หวาน (1 กล่อง 250ml) นมถั่วเหลือง",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:80,pro:7,fat:4,carb:4,sug:1,sod:90,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"SOY-02",nTh:"นมถั่วเหลืองหวานน้อย (1 กล่อง 250ml)",nEn:"",kw:"นมถั่วเหลืองหวานน้อย (1 กล่อง 250ml) นมถั่วเหลือง",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:110,pro:6,fat:3,carb:15,sug:13,sod:90,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"SOY-03",nTh:"นมถั่วเหลืองหวาน (1 กล่อง 250ml)",nEn:"",kw:"นมถั่วเหลืองหวาน (1 กล่อง 250ml) นมถั่วเหลือง",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:150,pro:6,fat:3,carb:24,sug:22,sod:90,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"ALT-01",nTh:"นมอัลมอนด์ไม่หวาน (1 กล่อง 250ml)",nEn:"",kw:"นมอัลมอนด์ไม่หวาน (1 กล่อง 250ml) นมอัลมอนด์",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:40,pro:1,fat:3,carb:2,sug:0,sod:75,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"ALT-02",nTh:"นมโอ๊ต (1 กล่อง 250ml)",nEn:"",kw:"นมโอ๊ต (1 กล่อง 250ml) นมโอ๊ต",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"กล่อง",refG:null,kcal:130,pro:3,fat:5,carb:17,sug:8,sod:100,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"YOG-01",nTh:"โยเกิร์ตกรีกรสธรรมชาติ (1 ถ้วย)",nEn:"",kw:"โยเกิร์ตกรีกรสธรรมชาติ (1 ถ้วย) โยเกิร์ต กรีกโยเกิร์ต",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"ถ้วย",refG:null,kcal:150,pro:17,fat:4,carb:9,sug:6,sod:65,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
+{id:"YOG-02",nTh:"โยเกิร์ตพร่องมันเนยรสธรรมชาติ (1 ถ้วย)",nEn:"",kw:"โยเกิร์ตพร่องมันเนยรสธรรมชาติ (1 ถ้วย) โยเกิร์ต",grp:"ไทย/ทั่วไป",cat:"นมและผลิตภัณฑ์นม",refAmt:1,refUnit:"ถ้วย",refG:null,kcal:140,pro:12,fat:3,carb:17,sug:17,sod:170,conf:"medium",ref:false,src:"ค่าประมาณทั่วไปจากผลิตภัณฑ์ยอดนิยม",url:"",mode:"serving"},
 ];
 
 let customFoods = [];
@@ -2282,6 +2399,119 @@ async function saveCustomFood(entry){
     carb:entry.carbsG, sug:entry.sugarG, sod:entry.sodiumMg, conf:'user', ref:false, src:'', url:'', mode:'serving'
   });
   try{ await window.storage.set('food:custom', JSON.stringify(customFoods), false); }catch(e){}
+}
+
+let recipeIngredients = [];
+let recipeSearchDebounce = null;
+
+function onRecipeSearchInput(){
+  clearTimeout(recipeSearchDebounce);
+  recipeSearchDebounce = setTimeout(runRecipeSearch, 250);
+}
+
+function runRecipeSearch(){
+  const q = document.getElementById('recipeSearchInput').value.trim().toLowerCase();
+  const box = document.getElementById('recipeResults');
+  if(!q){ box.innerHTML=''; box.style.display='none'; return; }
+  const all = allFoods();
+  const scored = [];
+  for(const item of all){
+    const s = scoreMatch(item, q);
+    if(s>0) scored.push([s, item]);
+  }
+  scored.sort((a,b)=>b[0]-a[0]);
+  const top = scored.slice(0,15).map(x=>x[1]);
+  if(top.length===0){
+    box.innerHTML = '<div class="result-empty">ไม่พบวัตถุดิบนี้ในฐานข้อมูล</div>';
+    box.style.display='block';
+    return;
+  }
+  box.innerHTML = top.map(it=>{
+    const idx = all.indexOf(it);
+    return `<div class="result-row" onclick="addRecipeIngredient(${idx})">
+      <div class="result-name">${escapeHtml(it.nTh)}</div>
+      <div class="result-nutri">${Math.round(it.kcal)} kcal • P ${fmt1(it.pro)}g • C ${fmt1(it.carb)}g • F ${fmt1(it.fat)}g</div>
+    </div>`;
+  }).join('');
+  box.style.display='block';
+}
+
+function addRecipeIngredient(idx){
+  const item = allFoods()[idx];
+  if(!item) return;
+  recipeIngredients.push({
+    nTh: item.nTh, qty: 1,
+    kcal: item.kcal, pro: item.pro, fat: item.fat, carb: item.carb, sug: item.sug, sod: item.sod
+  });
+  document.getElementById('recipeSearchInput').value = '';
+  document.getElementById('recipeResults').style.display='none';
+  document.getElementById('recipeResults').innerHTML = '';
+  renderRecipeIngredients();
+}
+
+function computeRecipeTotal(){
+  return recipeIngredients.reduce((acc,ing)=>{
+    acc.kcal += ing.kcal*ing.qty; acc.pro += ing.pro*ing.qty; acc.fat += ing.fat*ing.qty;
+    acc.carb += ing.carb*ing.qty; acc.sug += ing.sug*ing.qty; acc.sod += ing.sod*ing.qty;
+    return acc;
+  }, {kcal:0,pro:0,fat:0,carb:0,sug:0,sod:0});
+}
+
+function renderRecipeIngredients(){
+  const list = document.getElementById('recipeIngList');
+  const empty = document.getElementById('recipeIngEmpty');
+  const totalEl = document.getElementById('recipeTotal');
+  if(recipeIngredients.length===0){
+    list.innerHTML=''; empty.style.display='block';
+    totalEl.style.display='none';
+    return;
+  }
+  empty.style.display='none';
+  list.innerHTML = recipeIngredients.map((ing,i)=>`
+    <div class="checklist-row">
+      <input class="num-input" style="flex:0 0 56px;" type="number" step="0.1" min="0" value="${ing.qty}" onchange="updateRecipeQty(${i}, this.value)">
+      <div class="checklist-text" style="flex:1;">${escapeHtml(ing.nTh)}</div>
+      <button class="checklist-del" onclick="removeRecipeIngredient(${i})">✕</button>
+    </div>
+  `).join('');
+
+  const total = computeRecipeTotal();
+  totalEl.style.display='block';
+  totalEl.innerHTML = `<b>รวมทั้งหมด:</b> ${Math.round(total.kcal)} kcal • โปรตีน ${fmt1(total.pro)}g • คาร์บ ${fmt1(total.carb)}g • ไขมัน ${fmt1(total.fat)}g<br>น้ำตาล ${fmt1(total.sug)}g • โซเดียม ${fmtInt(total.sod)}mg`;
+}
+
+function updateRecipeQty(i, val){
+  const v = Number(val);
+  recipeIngredients[i].qty = (v>0) ? v : 1;
+  renderRecipeIngredients();
+}
+
+function removeRecipeIngredient(i){
+  recipeIngredients.splice(i,1);
+  renderRecipeIngredients();
+}
+
+async function saveRecipe(){
+  const name = document.getElementById('recipeNameInput').value.trim();
+  if(!name){ showToast('ตั้งชื่อเมนูก่อนนะคะ'); return; }
+  if(recipeIngredients.length===0){ showToast('เพิ่มวัตถุดิบก่อนนะคะ'); return; }
+  const exists = allFoods().some(f=>(f.nTh||'').toLowerCase()===name.toLowerCase());
+  if(exists){ showToast('มีชื่อเมนูนี้อยู่แล้ว ลองตั้งชื่ออื่นค่ะ'); return; }
+
+  const total = computeRecipeTotal();
+  customFoods.push({
+    id: 'recipe-'+Date.now(), nTh: name, nEn:'', kw: name+' สูตรของฉันเอง', grp:'', cat:'สูตรของฉันเอง',
+    refAmt:1, refUnit:'สูตร', refG:null,
+    kcal: Math.round(total.kcal), pro: Math.round(total.pro*10)/10, fat: Math.round(total.fat*10)/10,
+    carb: Math.round(total.carb*10)/10, sug: Math.round(total.sug*10)/10, sod: Math.round(total.sod),
+    conf:'user', ref:false, src:'สูตรที่คุณสร้างเอง', url:'', mode:'serving'
+  });
+  try{ await window.storage.set('food:custom', JSON.stringify(customFoods), false); }catch(e){}
+
+  recipeIngredients = [];
+  document.getElementById('recipeNameInput').value = '';
+  renderRecipeIngredients();
+  showToast(`บันทึกเมนู "${name}" แล้วค่ะ ค้นหาเจอได้เลยครั้งหน้า`);
 }
 
 let appearance = { character: 1, background: 1 };
@@ -2688,6 +2918,7 @@ function renderSummary(){
   document.getElementById('trueNetSub').textContent = `TDEE วันนี้ ~${Math.round(tdee)} kcal (BMR ${targets.bmr} × ${multiplier})${burned>0?` + ออกกำลังกาย ${Math.round(burned)} kcal`:''}`;
 
   renderNetInsight(totalKcal, trueNet, burned, targets.calMin, targets.calMax);
+  renderMacroPie(totalPro, totalCarb, totalFat);
 
   document.getElementById('calCard').onclick = ()=>showNutrientInfo('cal', totalKcal, targets.calMax, totalKcal>0 && totalKcal<targets.calMin);
   document.getElementById('proCard').onclick = ()=>showNutrientInfo('pro', totalPro, targets.proMax, totalPro>0 && totalPro<targets.proMin);
@@ -2697,6 +2928,49 @@ function renderSummary(){
   document.getElementById('sodCard').onclick = ()=>showNutrientInfo('sod', totalSodium, targets.sodiumLimit, false);
 
   updateMascot(totalKcal, totalPro, burned);
+}
+
+function renderMacroPie(pro, carb, fat){
+  const wrap = document.getElementById('macroPieWrap');
+  const empty = document.getElementById('macroPieEmpty');
+  const proCal = pro*4, carbCal = carb*4, fatCal = fat*9;
+  const total = proCal+carbCal+fatCal;
+  if(total <= 0){ wrap.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  const proPct = proCal/total*100, carbPct = carbCal/total*100, fatPct = fatCal/total*100;
+
+  const cx=70, cy=70, r=55;
+  function arcPath(startPct, pct, color){
+    if(pct<=0) return '';
+    const startAngle = startPct/100*360 - 90;
+    const endAngle = (startPct+pct)/100*360 - 90;
+    const x1 = cx + r*Math.cos(startAngle*Math.PI/180);
+    const y1 = cy + r*Math.sin(startAngle*Math.PI/180);
+    const x2 = cx + r*Math.cos(endAngle*Math.PI/180);
+    const y2 = cy + r*Math.sin(endAngle*Math.PI/180);
+    const largeArc = pct>50 ? 1 : 0;
+    return `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${largeArc} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${color}"/>`;
+  }
+
+  let cursor = 0;
+  let paths = '';
+  paths += arcPath(cursor, proPct, '#8B6FD1'); cursor += proPct;
+  paths += arcPath(cursor, carbPct, '#EC8FB4'); cursor += carbPct;
+  paths += arcPath(cursor, fatPct, '#F2C46D'); cursor += fatPct;
+
+  const svg = `<svg viewBox="0 0 140 140" style="width:140px;height:140px;">
+    ${paths}
+    <circle cx="${cx}" cy="${cy}" r="32" fill="var(--surface)"/>
+  </svg>`;
+
+  const legend = `<div style="display:flex;flex-direction:column;gap:8px;justify-content:center;">
+    <div style="font-size:12px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#8B6FD1;margin-right:6px;"></span>โปรตีน ${fmt1(pro)}g (${Math.round(proPct)}%)</div>
+    <div style="font-size:12px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#EC8FB4;margin-right:6px;"></span>คาร์บ ${fmt1(carb)}g (${Math.round(carbPct)}%)</div>
+    <div style="font-size:12px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F2C46D;margin-right:6px;"></span>ไขมัน ${fmt1(fat)}g (${Math.round(fatPct)}%)</div>
+  </div>`;
+
+  wrap.innerHTML = `<div style="display:flex;gap:20px;align-items:center;justify-content:center;">${svg}${legend}</div>`;
 }
 
 function renderNetInsight(totalKcal, trueNet, burned, calMin, calMax){
@@ -2727,6 +3001,110 @@ function renderNetInsight(totalKcal, trueNet, burned, calMin, calMax){
 
   el.textContent = msg;
   el.style.display = 'block';
+}
+
+function showDailyAnalysis(){
+  const box = document.getElementById('dailyAnalysisResult');
+  const foods = dayData.foods || [];
+  const exercises = dayData.exercises || [];
+  const waterTotal = (dayData.waterLog||[]).reduce((s,v)=>s+v,0);
+
+  const totalKcal = foods.reduce((s,f)=>s+Number(f.caloriesKcal||0),0);
+  const totalPro = foods.reduce((s,f)=>s+Number(f.proteinG||0),0);
+  const totalCarb = foods.reduce((s,f)=>s+Number(f.carbsG||0),0);
+  const totalFat = foods.reduce((s,f)=>s+Number(f.fatG||0),0);
+  const totalSugar = foods.reduce((s,f)=>s+Number(f.sugarG||0),0);
+  const totalSodium = foods.reduce((s,f)=>s+Number(f.sodiumMg||0),0);
+  const burned = exercises.reduce((s,e)=>s+Number(e.kcal||0),0);
+
+  if(foods.length===0 && exercises.length===0){
+    box.innerHTML = `<div class="advice-priority">ยังไม่มีข้อมูลวันนี้เลยค่ะ ลองบันทึกมื้ออาหารหรือออกกำลังกายก่อน แล้วค่อยกลับมาดูคำแนะนำอีกครั้งนะคะ</div>`;
+    box.style.display='block';
+    return;
+  }
+
+  const issues = [];
+
+  if(foods.length===0){
+    issues.push({sev:'high', text:'ยังไม่ได้บันทึกอาหารเลยวันนี้ — บันทึกไว้จะได้เห็นภาพรวมครบถ้วนค่ะ'});
+  } else if(totalKcal < targets.calMin){
+    issues.push({sev:'high', text:`กินไปแค่ ${Math.round(totalKcal)} kcal ต่ำกว่าเป้าขั้นต่ำ (${targets.calMin}) ลองเพิ่มมื้อหรือของว่างอีกหน่อยค่ะ`});
+  } else if(totalKcal > targets.calMax){
+    issues.push({sev:'medium', text:`กินไป ${Math.round(totalKcal)} kcal เกินเป้าสูงสุด (${targets.calMax}) ไปแล้ว`});
+  } else {
+    issues.push({sev:'good', text:`แคลอรี่อยู่ในเป้าหมายดีแล้ว (${Math.round(totalKcal)} kcal)`});
+  }
+
+  if(foods.length>0){
+    if(totalPro < targets.proMin){
+      const diff = Math.round(targets.proMin - totalPro);
+      issues.push({sev:'medium', text:`โปรตีนยังขาดอีก ~${diff}g ถึงจะครบเป้า ลองเพิ่มไข่ อกไก่ หรือนม/โยเกิร์ตดูค่ะ`});
+    } else {
+      issues.push({sev:'good', text:`โปรตีนถึงเป้าแล้ว (${fmt1(totalPro)}g)`});
+    }
+  }
+
+  if(totalCarb > targets.carbMax*1.2){
+    issues.push({sev:'low', text:`คาร์บวันนี้สูงกว่าเป้าพอสมควร (${fmt1(totalCarb)}g เทียบเป้า ${targets.carbMax}g)`});
+  }
+  if(totalFat > targets.fatMax*1.2){
+    issues.push({sev:'low', text:`ไขมันวันนี้สูงกว่าเป้าพอสมควร (${fmt1(totalFat)}g เทียบเป้า ${targets.fatMax}g)`});
+  }
+  if(totalSugar > targets.sugarLimit){
+    issues.push({sev:'medium', text:`น้ำตาลเกินขีดจำกัดแล้ว (${fmt1(totalSugar)}g / ${targets.sugarLimit}g) ลองสังเกตว่าเกินจากเครื่องดื่มหรือของหวานหรือเปล่าค่ะ`});
+  }
+  if(totalSodium > targets.sodiumLimit){
+    issues.push({sev:'medium', text:`โซเดียมเกินขีดจำกัดแล้ว (${fmtInt(totalSodium)}mg / ${targets.sodiumLimit}mg) ระวังของแปรรูป/น้ำจิ้มมื้อต่อไปนะคะ`});
+  }
+
+  if(exercises.length===0){
+    issues.push({sev:'medium', text:'ยังไม่ได้ออกกำลังกายวันนี้เลย ลองเดินเร็ว 20-30 นาที หรือกิจกรรมเบาๆ ก็ช่วยได้ค่ะ'});
+  } else {
+    issues.push({sev:'good', text:`ออกกำลังกายแล้ว เผาไป ${Math.round(burned)} kcal เก่งมากค่ะ`});
+  }
+
+  const plan = dayData.exercisePlan || [];
+  const undonePlan = plan.filter(p=>!p.done);
+  if(undonePlan.length>0){
+    issues.push({sev:'low', text:`มีแผนออกกำลังกายที่ยังไม่ได้ติ๊กว่าทำแล้ว ${undonePlan.length} รายการ (${undonePlan.map(p=>escapeHtml(p.text)).join(', ')})`});
+  }
+
+  if(waterTotal < targets.waterTarget*0.5){
+    issues.push({sev:'medium', text:`ดื่มน้ำไปแค่ ${waterTotal}ml จากเป้า ${targets.waterTarget}ml ลองดื่มเพิ่มอีกหน่อยนะคะ`});
+  } else if(waterTotal >= targets.waterTarget){
+    issues.push({sev:'good', text:`ดื่มน้ำครบเป้าแล้ว (${waterTotal}ml) เยี่ยมมากค่ะ`});
+  }
+
+  if(dayData.sleep != null){
+    if(dayData.sleep < 6){
+      issues.push({sev:'medium', text:`คืนก่อนนอนแค่ ${dayData.sleep} ชม. คืนนี้ลองพักผ่อนให้มากขึ้นนะคะ`});
+    } else {
+      issues.push({sev:'good', text:`นอนหลับ ${dayData.sleep} ชม. เพียงพอดีค่ะ`});
+    }
+  }
+
+  const scDone = Object.values(dayData.selfCare||{}).filter(Boolean).length;
+  if(selfCareItems.length>0 && scDone===0){
+    issues.push({sev:'low', text:'ยังไม่ได้ติ๊ก self-care วันนี้เลย ลองดูแลตัวเองสักนิดนะคะ'});
+  }
+
+  const severityOrder = {high:0, medium:1, low:2, good:3};
+  const sorted = [...issues].sort((a,b)=>severityOrder[a.sev]-severityOrder[b.sev]);
+  const priority = sorted.find(i=>i.sev!=='good') || sorted[0];
+
+  let html = '';
+  if(priority){
+    html += `<div class="advice-priority"><b>สิ่งที่ควรโฟกัสวันนี้:</b><br>${priority.text}</div>`;
+  }
+
+  html += `<div class="advice-section-title">📋 สรุปทั้งหมด</div>`;
+  issues.forEach(i=>{
+    const icon = i.sev==='good' ? '✅' : i.sev==='high' ? '🔴' : i.sev==='medium' ? '🟡' : 'ℹ️';
+    html += `<div class="advice-point"><span class="icon">${icon}</span><span>${i.text}</span></div>`;
+  });
+
+  box.innerHTML = html;
+  box.style.display = 'block';
 }
 
 function updateMascot(totalKcal, totalPro, burned){
@@ -3321,6 +3699,7 @@ async function renderHistory(){
     emptyEl.style.display='none';
 
     let agg = {kcal:0,pro:0,carb:0,fat:0,sug:0,sod:0};
+    let calPoints = [];
 
     for(const d of shownDates){
       const r = await window.storage.get('entries:'+d, false);
@@ -3335,6 +3714,7 @@ async function renderHistory(){
       const sod = foods.reduce((s,f)=>s+Number(f.sodiumMg||0),0);
       const burned = (data.exercises||[]).reduce((s,e)=>s+Number(e.kcal||0),0);
       agg.kcal+=kcal; agg.pro+=pro; agg.carb+=carb; agg.fat+=fat; agg.sug+=sug; agg.sod+=sod;
+      calPoints.push({date:d, kcal});
 
       const sugOver = sug > targets.sugarLimit;
       const sodOver = sod > targets.sodiumLimit;
@@ -3353,9 +3733,55 @@ async function renderHistory(){
         <div class="hist-grid">${Math.round(agg.kcal)} kcal • โปรตีน ${fmt1(agg.pro)} g • คาร์บ ${fmt1(agg.carb)} g • ไขมัน ${fmt1(agg.fat)} g</div>
         <div class="hist-grid">น้ำตาล ${fmt1(agg.sug)} g • โซเดียม ${fmtInt(agg.sod)} mg</div>`;
     }
+
+    const trendCard = document.getElementById('calTrendCard');
+    if(historyPeriod>1 && calPoints.length>=2){
+      calPoints.reverse(); // chronological order for chart
+      document.getElementById('calTrendChartWrap').innerHTML = buildCalTrendSvg(calPoints, targets.calMin, targets.calMax);
+      trendCard.style.display='block';
+    } else {
+      trendCard.style.display='none';
+    }
   }catch(e){
     emptyEl.style.display='block';
   }
+}
+
+function buildCalTrendSvg(points, calMin, calMax){
+  const W = 320, H = 170, padL = 40, padR = 12, padT = 14, padB = 26;
+  const vals = points.map(p=>p.kcal);
+  const maxV = Math.max(...vals, calMax) * 1.1;
+  const minV = 0;
+
+  function scaleY(v){ return padT + (1 - (v-minV)/(maxV-minV)) * (H-padT-padB); }
+  const barW = (W-padL-padR) / points.length * 0.6;
+  const step = (W-padL-padR) / points.length;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;font-family:Inter;">`;
+  svg += `<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#E4DCEE" stroke-width="1"/>`;
+
+  const yMinLine = scaleY(calMin), yMaxLine = scaleY(calMax);
+  svg += `<line x1="${padL}" y1="${yMaxLine.toFixed(1)}" x2="${W-padR}" y2="${yMaxLine.toFixed(1)}" stroke="#C9BEDD" stroke-width="1" stroke-dasharray="3,3"/>`;
+  svg += `<text x="${padL}" y="${(yMaxLine-3).toFixed(1)}" font-size="8" fill="#9B93A8">เป้า ${calMax}</text>`;
+
+  points.forEach((p,i)=>{
+    const x = padL + i*step + (step-barW)/2;
+    const y = scaleY(p.kcal);
+    const h = (H-padB) - y;
+    const over = p.kcal > calMax;
+    const color = over ? '#E2A85A' : '#8B6FD1';
+    svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0,h).toFixed(1)}" rx="3" fill="${color}"/>`;
+  });
+
+  const labelStep = points.length > 10 ? Math.ceil(points.length/6) : 1;
+  points.forEach((p,i)=>{
+    if(i % labelStep !== 0 && i !== points.length-1) return;
+    const x = padL + i*step + step/2;
+    svg += `<text x="${x.toFixed(1)}" y="${H-8}" font-size="8" fill="#9B93A8" text-anchor="middle">${p.date.slice(5)}</text>`;
+  });
+
+  svg += `</svg>`;
+  return svg;
 }
 
 document.getElementById('datePicker').addEventListener('change', (e)=>{
@@ -3368,6 +3794,13 @@ _searchInputEl.addEventListener('input', onFoodSearchInput);
 _searchInputEl.addEventListener('keyup', onFoodSearchInput);
 _searchInputEl.addEventListener('keydown', (e)=>{
   if(e.key==='Enter'){ e.preventDefault(); clearTimeout(searchDebounce); runFoodSearch(); }
+});
+
+const _recipeSearchInputEl = document.getElementById('recipeSearchInput');
+_recipeSearchInputEl.addEventListener('input', onRecipeSearchInput);
+_recipeSearchInputEl.addEventListener('keyup', onRecipeSearchInput);
+_recipeSearchInputEl.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter'){ e.preventDefault(); clearTimeout(recipeSearchDebounce); runRecipeSearch(); }
 });
 
 (async function init(){
