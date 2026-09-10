@@ -358,6 +358,23 @@
   .cal-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle;}
   .cal-dot.food{background:var(--purple);}
   .cal-dot.ex{background:var(--green);}
+  .cal-dot.period{background:#E2607A;}
+  .cal-day-dots .period{background:#E2607A;}
+  .cal-day.period-day{background:#FBE0E6;}
+  .cal-day.period-predicted{background:#FBE0E6;border:1.5px dashed #E2A0B0;}
+  .period-stats{background:var(--pink-soft);border-radius:14px;padding:12px 14px;font-size:12.5px;line-height:1.7;color:var(--text);}
+  .period-log-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .period-log-row:last-child{border-bottom:none;}
+  .fin-summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+  .fin-summary-card{background:var(--surface);border-radius:14px;padding:12px 8px;text-align:center;box-shadow:0 4px 18px rgba(139,111,209,0.08);}
+  .fin-summary-card .label{font-size:10.5px;color:var(--muted);margin-bottom:4px;}
+  .fin-summary-card .value{font-size:16px;font-weight:700;font-family:'Poppins';}
+  .fin-summary-card.income .value{color:#4A9B6E;}
+  .fin-summary-card.expense .value{color:#C24C4C;}
+  .fin-summary-card.net .value{color:var(--purple-dark);}
+  .fin-cat-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;}
+  .fin-cat-row:last-child{border-bottom:none;}
+  .fin-month-total{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;color:var(--purple-dark);border-bottom:2px solid var(--border);margin-bottom:6px;}
 
   .workout-plan-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
   .workout-plan-row:last-child{border-bottom:none;}
@@ -432,7 +449,6 @@
           </div>
         </div>
       </div>
-    </div>
 
 
     <div class="section">
@@ -685,7 +701,101 @@
   </div>
 
   <!-- HISTORY VIEW -->
-  <div class="view" id="view-history">
+  
+  <!-- CALENDAR VIEW -->
+  <div class="view" id="view-calendar">
+    <div class="section-title" style="margin-bottom:14px;"><h2>ปฏิทิน</h2></div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="shiftCalMonth(-1)">‹</button>
+        <div class="cal-month-label" id="calMonthLabel">-</div>
+        <button class="cal-nav-btn" onclick="shiftCalMonth(1)">›</button>
+      </div>
+      <div class="cal-weekday-row">
+        <div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span><span class="cal-dot food"></span> บันทึกอาหาร</span>
+        <span><span class="cal-dot ex"></span> ออกกำลังกาย</span>
+        <span><span class="cal-dot period"></span> ประจำเดือน</span>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-bottom:10px;"><h2>จดรอบเดือน</h2></div>
+    <div class="card" style="margin-bottom:16px;">
+      <div id="periodStatsBox"></div>
+      <div class="form-row" style="margin-top:10px;">
+        <button class="add-btn food" style="flex:1;" onclick="logPeriodToday()">🩸 บันทึกวันแรกของประจำเดือนวันนี้</button>
+      </div>
+      <div class="form-row" style="margin-top:8px;">
+        <label style="font-size:11.5px;color:var(--muted);flex:1;">จำนวนวันที่มีประจำเดือนโดยเฉลี่ย</label>
+        <input class="num-input" id="periodDurationInput" type="number" style="flex:0 0 60px;" onchange="savePeriodDuration(this.value)">
+      </div>
+      <div id="periodLogList" style="margin-top:10px;"></div>
+      <div class="empty-hint" id="periodLogEmpty">ยังไม่มีประวัติรอบเดือนบันทึกไว้</div>
+    </div>
+
+    <div class="section-title" style="margin-bottom:10px;"><h2>ตารางออกกำลังกายประจำสัปดาห์</h2></div>
+    <div class="card">
+      <div class="empty-hint" style="padding-top:0;margin-bottom:10px;">วางแผนกิจกรรมของแต่ละวัน แก้ไขได้ตลอด ไม่ผูกกับวันที่จริง</div>
+      <div id="workoutPlanRows"></div>
+      <button class="save-targets" onclick="saveWorkoutPlan()" style="margin-top:12px;">บันทึกตาราง</button>
+    </div>
+  </div>
+
+  <!-- TARGETS VIEW -->
+  <!-- FINANCE VIEW -->
+  <div class="view" id="view-finance">
+    <div class="section-title" style="margin-bottom:14px;"><h2>การเงิน</h2></div>
+
+    <div class="fin-summary-grid">
+      <div class="fin-summary-card income">
+        <div class="label">รายรับวันนี้</div>
+        <div class="value" id="finIncomeToday">0</div>
+      </div>
+      <div class="fin-summary-card expense">
+        <div class="label">รายจ่ายวันนี้</div>
+        <div class="value" id="finExpenseToday">0</div>
+      </div>
+      <div class="fin-summary-card net">
+        <div class="label">คงเหลือวันนี้</div>
+        <div class="value" id="finNetToday">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="meal-chip-row">
+        <div class="meal-chip active" data-fintype="expense" onclick="setFinType('expense')">💸 รายจ่าย</div>
+        <div class="meal-chip" data-fintype="income" onclick="setFinType('income')">💰 รายรับ</div>
+      </div>
+      <div class="form-row" style="margin-top:10px;">
+        <input class="num-input" id="finAmount" placeholder="จำนวนเงิน (บาท)" type="number" inputmode="decimal">
+        <select class="name-input" id="finCategory"></select>
+      </div>
+      <div class="form-row" style="margin-top:8px;">
+        <input class="name-input" id="finNote" placeholder="โน้ต (ไม่บังคับ) เช่น ข้าวมันไก่" style="flex:1;">
+      </div>
+      <div class="form-row" style="margin-top:8px;">
+        <button class="add-btn food" style="flex:1;" onclick="addFinanceEntry()">+ เพิ่มรายการ</button>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-bottom:10px;"><h2>รายการวันนี้</h2></div>
+    <div class="card">
+      <div class="item-list" id="financeTodayList"></div>
+      <div class="empty-hint" id="financeTodayEmpty">ยังไม่มีรายการวันนี้</div>
+    </div>
+
+    <div class="section-title" style="margin-bottom:10px;"><h2>สรุปเดือนนี้</h2></div>
+    <div class="card">
+      <div id="financeMonthSummary"></div>
+      <div class="empty-hint" id="financeMonthEmpty">ยังไม่มีข้อมูลเดือนนี้</div>
+    </div>
+  </div>
+
+  <div class="view" id="view-targets">
     <div class="section-title" style="margin-bottom:14px;"><h2>ประวัติย้อนหลัง</h2></div>
     <div class="card" id="weeklyInsightsCard" style="display:none;margin-bottom:16px;">
       <div class="insights-title">📊 สรุปเชิงลึกรายสัปดาห์</div>
@@ -704,38 +814,7 @@
     <div id="historySummary"></div>
     <div id="historyList"></div>
     <div class="empty-hint" id="histEmpty">ยังไม่มีข้อมูลย้อนหลัง</div>
-  </div>
 
-  <!-- CALENDAR VIEW -->
-  <div class="view" id="view-calendar">
-    <div class="section-title" style="margin-bottom:14px;"><h2>ปฏิทิน</h2></div>
-
-    <div class="card" style="margin-bottom:16px;">
-      <div class="cal-nav">
-        <button class="cal-nav-btn" onclick="shiftCalMonth(-1)">‹</button>
-        <div class="cal-month-label" id="calMonthLabel">-</div>
-        <button class="cal-nav-btn" onclick="shiftCalMonth(1)">›</button>
-      </div>
-      <div class="cal-weekday-row">
-        <div>อา</div><div>จ</div><div>อ</div><div>พ</div><div>พฤ</div><div>ศ</div><div>ส</div>
-      </div>
-      <div class="cal-grid" id="calGrid"></div>
-      <div class="cal-legend">
-        <span><span class="cal-dot food"></span> บันทึกอาหาร</span>
-        <span><span class="cal-dot ex"></span> ออกกำลังกาย</span>
-      </div>
-    </div>
-
-    <div class="section-title" style="margin-bottom:10px;"><h2>ตารางออกกำลังกายประจำสัปดาห์</h2></div>
-    <div class="card">
-      <div class="empty-hint" style="padding-top:0;margin-bottom:10px;">วางแผนกิจกรรมของแต่ละวัน แก้ไขได้ตลอด ไม่ผูกกับวันที่จริง</div>
-      <div id="workoutPlanRows"></div>
-      <button class="save-targets" onclick="saveWorkoutPlan()" style="margin-top:12px;">บันทึกตาราง</button>
-    </div>
-  </div>
-
-  <!-- TARGETS VIEW -->
-  <div class="view" id="view-targets">
     <div class="section-title" style="margin-bottom:14px;"><h2>เป้าหมายของฉัน</h2></div>
     <div class="info-card">
       BMR (วัดจาก InBody): <b>1,137 kcal</b> — ห้ามกินต่ำกว่านี้<br>
@@ -799,9 +878,9 @@
 
 <div class="tabbar">
   <button class="tab-btn active" id="tabbtn-today" onclick="switchTab('today')">วันนี้</button>
-  <button class="tab-btn" id="tabbtn-history" onclick="switchTab('history')">ประวัติ</button>
   <button class="tab-btn" id="tabbtn-calendar" onclick="switchTab('calendar')">ปฏิทิน</button>
-  <button class="tab-btn" id="tabbtn-targets" onclick="switchTab('targets')">เป้าหมาย</button>
+  <button class="tab-btn" id="tabbtn-finance" onclick="switchTab('finance')">การเงิน</button>
+  <button class="tab-btn" id="tabbtn-targets" onclick="switchTab('targets')">ประวัติ/เป้าหมาย</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -2580,6 +2659,128 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'), 1400);
 }
 
+const FIN_CATEGORIES = {
+  expense: ['อาหาร','เดินทาง','ช้อปปิ้ง','ค่าใช้จ่ายบ้าน','บันเทิง','สุขภาพ','การศึกษา','อื่นๆ'],
+  income: ['เงินเดือน','รายได้เสริม','ของขวัญ','อื่นๆ'],
+};
+let financeType = 'expense';
+let financeDayData = { transactions: [] };
+
+function setFinType(type){
+  financeType = type;
+  document.querySelectorAll('.meal-chip[data-fintype]').forEach(c=>{
+    c.classList.toggle('active', c.dataset.fintype===type);
+  });
+  populateFinCategories();
+}
+
+function populateFinCategories(){
+  const sel = document.getElementById('finCategory');
+  sel.innerHTML = FIN_CATEGORIES[financeType].map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+
+async function loadFinanceDay(dateStr){
+  try{
+    const res = await window.storage.get('finance:'+dateStr, false);
+    if(res && res.value){ financeDayData = JSON.parse(res.value); }
+    else { financeDayData = { transactions: [] }; }
+  }catch(e){ financeDayData = { transactions: [] }; }
+  if(!financeDayData.transactions) financeDayData.transactions = [];
+  renderFinanceToday();
+}
+
+async function saveFinanceDay(){
+  try{ await window.storage.set('finance:'+currentDate, JSON.stringify(financeDayData), false); }catch(e){}
+}
+
+function renderFinanceToday(){
+  const list = document.getElementById('financeTodayList');
+  const empty = document.getElementById('financeTodayEmpty');
+  const txs = financeDayData.transactions || [];
+  if(txs.length===0){ list.innerHTML=''; empty.style.display='block'; }
+  else{
+    empty.style.display='none';
+    list.innerHTML = txs.map((t,i)=>{
+      const sign = t.type==='income' ? '+' : '-';
+      const color = t.type==='income' ? '#4A9B6E' : '#C24C4C';
+      return `<div class="item-row">
+        <div><div class="name">${escapeHtml(t.category)}${t.note?' — '+escapeHtml(t.note):''}</div><div class="meta" style="color:${color};">${sign}${t.amount.toLocaleString()} บาท</div></div>
+        <div class="right"><button class="del-btn" onclick="removeFinanceEntry(${i})">✕</button></div>
+      </div>`;
+    }).join('');
+  }
+
+  const income = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  document.getElementById('finIncomeToday').textContent = income.toLocaleString();
+  document.getElementById('finExpenseToday').textContent = expense.toLocaleString();
+  document.getElementById('finNetToday').textContent = (income-expense).toLocaleString();
+}
+
+function addFinanceEntry(){
+  const amount = Number(document.getElementById('finAmount').value);
+  const category = document.getElementById('finCategory').value;
+  const note = document.getElementById('finNote').value.trim();
+  if(!amount || amount<=0){ showToast('กรอกจำนวนเงินด้วยค่ะ'); return; }
+  financeDayData.transactions.push({ type: financeType, amount, category, note });
+  document.getElementById('finAmount').value = '';
+  document.getElementById('finNote').value = '';
+  renderFinanceToday();
+  saveFinanceDay();
+  renderFinanceMonthSummary();
+}
+
+function removeFinanceEntry(i){
+  financeDayData.transactions.splice(i,1);
+  renderFinanceToday();
+  saveFinanceDay();
+  renderFinanceMonthSummary();
+}
+
+async function renderFinanceMonthSummary(){
+  const box = document.getElementById('financeMonthSummary');
+  const empty = document.getElementById('financeMonthEmpty');
+  try{
+    const res = await window.storage.list('finance:', false);
+    if(!res || !res.keys || res.keys.length===0){ box.innerHTML=''; empty.style.display='block'; return; }
+    const now = new Date();
+    const prefix = `${now.getFullYear()}-${pad2(now.getMonth()+1)}-`;
+    const monthKeys = res.keys.filter(k=>k.replace('finance:','').startsWith(prefix));
+    if(monthKeys.length===0){ box.innerHTML=''; empty.style.display='block'; return; }
+    empty.style.display='none';
+
+    let totalIncome=0, totalExpense=0;
+    const catTotals = {};
+    for(const k of monthKeys){
+      const r = await window.storage.get(k, false);
+      if(!r || !r.value) continue;
+      const data = JSON.parse(r.value);
+      (data.transactions||[]).forEach(t=>{
+        if(t.type==='income') totalIncome += t.amount;
+        else{
+          totalExpense += t.amount;
+          catTotals[t.category] = (catTotals[t.category]||0) + t.amount;
+        }
+      });
+    }
+
+    let html = `<div class="fin-month-total"><span>รายรับรวม</span><span style="color:#4A9B6E;">+${totalIncome.toLocaleString()} บาท</span></div>
+      <div class="fin-month-total"><span>รายจ่ายรวม</span><span style="color:#C24C4C;">-${totalExpense.toLocaleString()} บาท</span></div>
+      <div class="fin-month-total"><span>คงเหลือสุทธิ</span><span>${(totalIncome-totalExpense).toLocaleString()} บาท</span></div>`;
+
+    const sortedCats = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+    if(sortedCats.length>0){
+      html += `<div style="font-size:11.5px;color:var(--muted);margin:8px 0 4px;">แยกตามหมวดรายจ่าย</div>`;
+      sortedCats.forEach(([cat,amt])=>{
+        html += `<div class="fin-cat-row"><span>${escapeHtml(cat)}</span><span>${amt.toLocaleString()} บาท</span></div>`;
+      });
+    }
+    box.innerHTML = html;
+  }catch(e){
+    box.innerHTML=''; empty.style.display='block';
+  }
+}
+
 function switchTab(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -2590,8 +2791,9 @@ function switchTab(name){
   if(results){ results.style.display='none'; results.innerHTML=''; }
   const modal = document.getElementById('sourceModal');
   if(modal){ modal.style.display='none'; }
-  if(name==='history') renderHistory();
-  if(name==='calendar'){ renderCalendar(); loadWorkoutPlan(); }
+  if(name==='targets') renderHistory();
+  if(name==='calendar'){ loadPeriodData(); renderCalendar(); loadWorkoutPlan(); }
+  if(name==='finance'){ loadFinanceDay(currentDate); renderFinanceMonthSummary(); }
 }
 
 let targets = {
@@ -3550,6 +3752,17 @@ async function renderCalendar(){
     }
   }catch(e){}
 
+  // compute period days (actual logged ranges) and predicted next range
+  const periodDaySet = new Set();
+  periodLog.forEach(start=>{
+    for(let i=0;i<periodDuration;i++){ periodDaySet.add(addDaysStr(start, i)); }
+  });
+  const predictedDaySet = new Set();
+  const stats = computeCycleStats();
+  if(stats){
+    for(let i=0;i<periodDuration;i++){ predictedDaySet.add(addDaysStr(stats.nextPredicted, i)); }
+  }
+
   let html = '';
   for(let i=0;i<firstDow;i++){ html += '<div class="cal-day empty"></div>'; }
   for(let d=1; d<=daysInMonth; d++){
@@ -3557,11 +3770,15 @@ async function renderCalendar(){
     const isFuture = dateStr > todayKey;
     const isToday = dateStr === todayKey;
     const info = dayInfo[dateStr];
+    const isPeriod = periodDaySet.has(dateStr);
+    const isPredicted = !isPeriod && predictedDaySet.has(dateStr);
     let dots = '';
     if(info){
-      dots = '<div class="cal-day-dots">' + (info.food?'<span class="food"></span>':'') + (info.ex?'<span class="ex"></span>':'') + '</div>';
+      dots = '<div class="cal-day-dots">' + (info.food?'<span class="food"></span>':'') + (info.ex?'<span class="ex"></span>':'') + (isPeriod?'<span class="period"></span>':'') + '</div>';
+    } else if(isPeriod){
+      dots = '<div class="cal-day-dots"><span class="period"></span></div>';
     }
-    const cls = 'cal-day' + (isToday?' today':'') + (isFuture?' future':'');
+    const cls = 'cal-day' + (isToday?' today':'') + (isFuture?' future':'') + (isPeriod?' period-day':'') + (isPredicted?' period-predicted':'');
     const onclick = `onclick="goToCalDate('${dateStr}')"`;
     html += `<div class="${cls}" ${onclick}>${d}${dots}</div>`;
   }
@@ -3606,6 +3823,117 @@ async function saveWorkoutPlan(){
     await window.storage.set('settings:workoutPlan', JSON.stringify(plan), false);
     showToast('บันทึกตารางออกกำลังกายแล้ว');
   }catch(e){ showToast('บันทึกไม่สำเร็จ'); }
+}
+
+let periodLog = [];
+let periodDuration = 5;
+
+async function loadPeriodData(){
+  try{
+    const res = await window.storage.get('settings:periodLog', false);
+    if(res && res.value){ periodLog = JSON.parse(res.value); }
+  }catch(e){ periodLog = []; }
+  try{
+    const res2 = await window.storage.get('settings:periodDuration', false);
+    if(res2 && res2.value){ periodDuration = Number(res2.value) || 5; }
+  }catch(e){}
+  periodLog.sort();
+  document.getElementById('periodDurationInput').value = periodDuration;
+  renderPeriodStats();
+}
+
+async function logPeriodToday(){
+  const today = todayStr();
+  if(periodLog.includes(today)){ showToast('บันทึกวันนี้ไว้แล้วค่ะ'); return; }
+  periodLog.push(today);
+  periodLog.sort();
+  try{ await window.storage.set('settings:periodLog', JSON.stringify(periodLog), false); }catch(e){}
+  renderPeriodStats();
+  renderCalendar();
+  showToast('บันทึกแล้วค่ะ');
+}
+
+async function removePeriodLog(dateStr){
+  periodLog = periodLog.filter(d=>d!==dateStr);
+  try{ await window.storage.set('settings:periodLog', JSON.stringify(periodLog), false); }catch(e){}
+  renderPeriodStats();
+  renderCalendar();
+}
+
+async function savePeriodDuration(val){
+  periodDuration = Number(val) || 5;
+  try{ await window.storage.set('settings:periodDuration', String(periodDuration), false); }catch(e){}
+  renderPeriodStats();
+  renderCalendar();
+}
+
+function addDaysStr(dateStr, days){
+  const d = new Date(dateStr+'T00:00:00');
+  d.setDate(d.getDate()+days);
+  return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+}
+function daysBetween(a, b){
+  const d1 = new Date(a+'T00:00:00'), d2 = new Date(b+'T00:00:00');
+  return Math.round((d2-d1)/(1000*60*60*24));
+}
+
+function computeCycleStats(){
+  if(periodLog.length===0) return null;
+  const lastStart = periodLog[periodLog.length-1];
+  let avgCycle = 28;
+  if(periodLog.length>=2){
+    const diffs = [];
+    for(let i=1;i<periodLog.length;i++){
+      diffs.push(daysBetween(periodLog[i-1], periodLog[i]));
+    }
+    avgCycle = Math.round(diffs.reduce((s,v)=>s+v,0)/diffs.length);
+  }
+  const nextPredicted = addDaysStr(lastStart, avgCycle);
+  const today = todayStr();
+  const currentCycleDay = daysBetween(lastStart, today) + 1;
+  const daysUntilNext = daysBetween(today, nextPredicted);
+
+  let phase = '';
+  if(currentCycleDay>=1 && currentCycleDay<=periodDuration){
+    phase = 'ระยะมีประจำเดือน';
+  } else if(currentCycleDay > periodDuration && currentCycleDay < Math.round(avgCycle/2)-1){
+    phase = 'ระยะฟื้นตัว (ก่อนตกไข่)';
+  } else if(currentCycleDay >= Math.round(avgCycle/2)-1 && currentCycleDay <= Math.round(avgCycle/2)+1){
+    phase = 'ช่วงคาดว่าตกไข่';
+  } else {
+    phase = 'ระยะหลังตกไข่';
+  }
+
+  return { lastStart, avgCycle, nextPredicted, currentCycleDay, daysUntilNext, phase, hasEnoughData: periodLog.length>=2 };
+}
+
+function renderPeriodStats(){
+  const box = document.getElementById('periodStatsBox');
+  const listEl = document.getElementById('periodLogList');
+  const emptyEl = document.getElementById('periodLogEmpty');
+
+  const stats = computeCycleStats();
+  if(!stats){
+    box.innerHTML = `<div class="period-stats">ยังไม่มีข้อมูลรอบเดือน — กดปุ่มด้านล่างบันทึกวันแรกของรอบล่าสุดได้เลยค่ะ</div>`;
+  } else {
+    box.innerHTML = `<div class="period-stats">
+      วันนี้คือวันที่ <b>${stats.currentCycleDay}</b> ของรอบเดือน (${escapeHtml(stats.phase)})<br>
+      ${stats.hasEnoughData ? `รอบเดือนเฉลี่ย: <b>${stats.avgCycle} วัน</b><br>` : 'ยังมีข้อมูลไม่พอคำนวณรอบเฉลี่ย (ต้องมีอย่างน้อย 2 ครั้ง) ใช้ค่าเริ่มต้น 28 วันไปก่อน<br>'}
+      คาดว่าจะมาอีกครั้ง: <b>${stats.nextPredicted}</b> (อีก ${stats.daysUntilNext} วัน)
+    </div>`;
+  }
+
+  if(periodLog.length===0){
+    listEl.innerHTML=''; emptyEl.style.display='block';
+    return;
+  }
+  emptyEl.style.display='none';
+  listEl.innerHTML = [...periodLog].reverse().map(d=>`
+    <div class="period-log-row">
+      <span>${d}</span>
+      <button class="checklist-del" onclick="removePeriodLog('${d}')">✕</button>
+    </div>
+  `).join('');
 }
 
 async function renderWeeklyInsights(){
@@ -3806,6 +4134,7 @@ _recipeSearchInputEl.addEventListener('keydown', (e)=>{
 (async function init(){
   document.getElementById('datePicker').value = currentDate;
   setMealType(selectedMealType);
+  populateFinCategories();
   await loadAppearance();
   await loadTargets();
   await loadCustomFoods();
