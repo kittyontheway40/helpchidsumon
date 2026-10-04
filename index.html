@@ -528,6 +528,13 @@
     </div>
 
     <div class="section">
+      <div class="section-title"><h2>🍽️ แนะนำกินต่อไป</h2></div>
+      <div class="card">
+        <div id="mealRecommendation"></div>
+      </div>
+    </div>
+
+    <div class="section">
       <div class="section-title"><h2><span class="dot dot-macro"></span>สัดส่วนสารอาหารวันนี้</h2></div>
       <div class="card">
         <div id="macroPieWrap"></div>
@@ -613,6 +620,13 @@
     </div>
 
     <div class="section">
+      <div class="section-title"><h2>🏋️ โปรแกรมเทรนวันนี้</h2></div>
+      <div class="card">
+        <div id="trainAdviceBox"><div class="empty-hint">กำลังวิเคราะห์...</div></div>
+      </div>
+    </div>
+
+    <div class="section">
       <div class="section-title"><h2><span class="dot dot-ex"></span>ออกกำลังกาย</h2></div>
       <div class="card">
         <div class="item-list" id="exList"></div>
@@ -626,7 +640,12 @@
             <option value="ว่ายน้ำ">ว่ายน้ำ</option>
             <option value="เล่นเทนนิส">เล่นเทนนิส</option>
             <option value="ปั่นจักรยาน">ปั่นจักรยาน</option>
-            <option value="เล่นเวท">เล่นเวท</option>
+            <option value="เวท - Upper">เวท - Upper</option>
+            <option value="เวท - Lower">เวท - Lower</option>
+            <option value="เวท - Booty/Glutes">เวท - Booty/Glutes</option>
+            <option value="เวท - Full Body">เวท - Full Body</option>
+            <option value="เวท - Core/Abs">เวท - Core/Abs</option>
+            <option value="BodyPump (คลาส)">BodyPump (คลาส)</option>
             <option value="__other__">อื่นๆ (พิมพ์เอง)</option>
           </select>
         </div>
@@ -637,9 +656,43 @@
           <input class="num-input" id="exMin" placeholder="นาที" type="number" inputmode="decimal">
           <input class="num-input" id="exKcal" placeholder="kcal" type="number" inputmode="decimal">
         </div>
+        <div id="exLiftRow" style="display:none;margin-top:8px;">
+          <div class="form-row">
+            <input class="name-input" id="exMoveName" placeholder="ชื่อท่า/เครื่อง เช่น Leg Press, Bench Press, หรือ BodyPump (ไม่บังคับ)">
+          </div>
+          <div class="form-row" style="margin-top:8px;">
+            <input class="num-input" id="exLoadKg" placeholder="น้ำหนัก/แผ่นเหล็กที่ใช้ (กก.)" type="number" step="0.5" inputmode="decimal">
+            <input class="num-input" id="exSets" placeholder="เซ็ต" type="number" inputmode="decimal">
+            <input class="num-input" id="exReps" placeholder="ครั้ง/เซ็ต" type="number" inputmode="decimal">
+          </div>
+          <div class="empty-hint" style="padding-top:4px;">ไม่บังคับเลยค่ะ ถ้าเข้าคลาส BodyPump หรือเล่นหลายเครื่องจนไม่มีตัวเลขเดียวชัดเจน ข้ามช่องนี้ได้ กรอกแค่นาทีกับ kcal พอ — แต่ถ้าจำน้ำหนักที่ใช้ได้ (เช่น บาร์เบล BodyPump หรือเครื่องตัวใดตัวหนึ่งที่เล่นประจำ) กรอกไว้จะช่วยให้เห็นว่ากำลังแข็งแรงขึ้นไหม</div>
+        </div>
         <div class="form-row" style="margin-top:8px;">
           <button class="add-btn ex" style="flex:1;" onclick="addExercise()">+ เพิ่มการออกกำลังกาย</button>
         </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2>🍽️ มื้ออาหารรอบออกกำลังกาย</h2></div>
+      <div class="card">
+        <div class="form-row">
+          <select class="name-input" id="mealPlanExType">
+            <option value="cardio">คาร์ดิโอ (วิ่ง/เดินเร็ว/ปั่นจักรยาน/ว่ายน้ำ ฯลฯ)</option>
+            <option value="weight">เล่นเวท</option>
+          </select>
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+          <input class="num-input" id="mealPlanDuration" type="number" inputmode="decimal" placeholder="นาที" value="60">
+          <select class="name-input" id="mealPlanTiming">
+            <option value="before">วางแผนล่วงหน้า (ยังไม่ได้ออก)</option>
+            <option value="after">เพิ่งออกกำลังกายเสร็จ</option>
+          </select>
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="add-btn ex" style="flex:1;" onclick="renderMealPlanAdvice()" type="button">คำนวณคำแนะนำ</button>
+        </div>
+        <div id="mealPlanResult" style="margin-top:10px;"></div>
       </div>
     </div>
 
@@ -691,10 +744,55 @@
     </div>
 
     <div class="section">
+      <div class="section-title"><h2>💓 การฟื้นตัว (Recovery)</h2></div>
+      <div class="card">
+        <div class="sleep-row">
+          <input id="restingHR" placeholder="ชีพจรขณะพัก (bpm) — จากนาฬิกาตอนเช้า" type="number" inputmode="decimal">
+          <button class="sleep-save" onclick="saveRestingHR()">บันทึก</button>
+        </div>
+        <div class="form-row" style="margin-top:10px;">
+          <select class="name-input" id="sorenessSelect">
+            <option value="">ความล้า/ปวดเมื่อยวันนี้ — เลือก</option>
+            <option value="1">1 - สดใส ไม่ล้าเลย</option>
+            <option value="2">2 - ปกติ</option>
+            <option value="3">3 - ล้านิดหน่อย/ปวดเมื่อยเบาๆ</option>
+            <option value="4">4 - ค่อนข้างล้า/ปวดเมื่อยชัดเจน</option>
+            <option value="5">5 - ล้ามาก ปวดเมื่อยทั้งตัว</option>
+          </select>
+          <button class="sleep-save" onclick="saveSoreness()">บันทึก</button>
+        </div>
+        <div class="waist-note">เอามาจากนาฬิกา Huawei ตอนตื่นนอนได้เลย — แอปจะเทียบกับค่าเฉลี่ย 7 วันให้ ถ้าสูงผิดปกติจะเตือนว่าอาจพักฟื้นไม่พอ</div>
+        <div id="recoveryInsight" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <div class="section">
       <div class="section-title"><h2><span class="dot dot-sleep"></span>แนวโน้มน้ำหนัก & รอบเอว</h2></div>
       <div class="card">
         <div id="trendChartWrap"></div>
         <div class="empty-hint" id="trendEmpty">ยังไม่มีข้อมูลพอวาดกราฟ (บันทึกน้ำหนักหรือรอบเอวอย่างน้อย 2 ครั้ง)</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><h2>🩺 ผลสแกน InBody</h2></div>
+      <div class="card">
+        <div class="form-row">
+          <input class="num-input" id="inbodyWeight" placeholder="น้ำหนัก (กก.)" type="number" step="0.1" inputmode="decimal">
+          <input class="num-input" id="inbodyFatPct" placeholder="% ไขมัน" type="number" step="0.1" inputmode="decimal">
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+          <input class="num-input" id="inbodyMuscle" placeholder="มวลกล้ามเนื้อ (กก.)" type="number" step="0.1" inputmode="decimal">
+          <input class="num-input" id="inbodyVisceral" placeholder="ไขมันในช่องท้อง (level)" type="number" step="1" inputmode="decimal">
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+          <input class="num-input" id="inbodyBmr" placeholder="BMR จากเครื่อง (kcal)" type="number" step="1" inputmode="decimal" style="flex:1;">
+        </div>
+        <div class="form-row" style="margin-top:8px;">
+          <button class="add-btn ex" style="flex:1;" onclick="saveInbodyScan()" type="button">+ บันทึกผลสแกนวันนี้</button>
+        </div>
+        <div class="empty-hint" style="padding-top:8px;">สแกนทุกครั้งที่ไปยิม (Virgin Active มีเครื่อง InBody) แล้วกรอกที่นี่ — ถ้าใส่ BMR จากเครื่องด้วย แอปจะอัปเดตค่า BMR ที่ใช้คำนวณแคลสุทธิจริงให้อัตโนมัติ ไม่ต้องไปแก้ในแท็บเป้าหมายเอง</div>
+        <div id="inbodyHistory" style="margin-top:12px;"></div>
       </div>
     </div>
 
@@ -2652,11 +2750,11 @@ function todayStr(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-function showToast(msg){
+function showToast(msg, duration){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 1400);
+  setTimeout(()=>t.classList.remove('show'), duration || 1400);
 }
 
 const FIN_CATEGORIES = {
@@ -2797,8 +2895,10 @@ function switchTab(name){
 }
 
 let targets = {
-  calMin: 1250, calMax: 1300, proMin: 85, proMax: 100,
-  carbMax: 150, fatMax: 45, sugarLimit: 50, sodiumLimit: 2000, waterTarget: 2000, bmr: 1137
+  // ปรับตามผลสแกน InBody770S จริง (2026-10-04): น้ำหนัก 54.5kg, PBF 34.8%, SMM 19.1kg, BMR วัดจริง 1137 kcal
+  // เป้าหมาย: body recomposition (ลดไขมัน + เพิ่มกล้ามเนื้อ) ไม่ใช่ตัดแคลสุดโต่ง เพราะตัดมากเกินไปจะไปขัดขวางการสร้างกล้ามเนื้อ
+  calMin: 1300, calMax: 1400, proMin: 105, proMax: 125,
+  carbMax: 120, fatMax: 48, sugarLimit: 50, sodiumLimit: 2000, waterTarget: 2000, bmr: 1137
 };
 
 const ACTIVITY_MULTIPLIERS = { home: 1.2, office: 1.375, active: 1.55 };
@@ -2822,12 +2922,12 @@ async function loadTargets(){
 
 async function saveTargets(){
   targets = {
-    calMin: Number(document.getElementById('tCalMin').value) || 1250,
-    calMax: Number(document.getElementById('tCalMax').value) || 1300,
-    proMin: Number(document.getElementById('tProMin').value) || 85,
-    proMax: Number(document.getElementById('tProMax').value) || 100,
-    carbMax: Number(document.getElementById('tCarbMax').value) || 150,
-    fatMax: Number(document.getElementById('tFatMax').value) || 45,
+    calMin: Number(document.getElementById('tCalMin').value) || 1300,
+    calMax: Number(document.getElementById('tCalMax').value) || 1400,
+    proMin: Number(document.getElementById('tProMin').value) || 105,
+    proMax: Number(document.getElementById('tProMax').value) || 125,
+    carbMax: Number(document.getElementById('tCarbMax').value) || 120,
+    fatMax: Number(document.getElementById('tFatMax').value) || 48,
     sugarLimit: Number(document.getElementById('tSugarLimit').value) || 50,
     sodiumLimit: Number(document.getElementById('tSodiumLimit').value) || 2000,
     waterTarget: Number(document.getElementById('tWaterTarget').value) || 2000,
@@ -2882,9 +2982,13 @@ async function loadDay(dateStr){
   if(!dayData.activityLevel) dayData.activityLevel = 'office';
   if(!dayData.exercisePlan) dayData.exercisePlan = [];
   if(!dayData.selfCare) dayData.selfCare = {};
+  if(dayData.restingHR===undefined) dayData.restingHR = null;
+  if(dayData.soreness===undefined) dayData.soreness = null;
   document.getElementById('sleepHours').value = dayData.sleep ?? '';
   document.getElementById('waistCm').value = dayData.waist ?? '';
   document.getElementById('weightKg').value = dayData.weight ?? '';
+  document.getElementById('restingHR').value = dayData.restingHR ?? '';
+  document.getElementById('sorenessSelect').value = dayData.soreness ?? '';
   document.querySelectorAll('.activity-chip').forEach(c=>{
     c.classList.toggle('active', c.dataset.activity===dayData.activityLevel);
   });
@@ -2895,6 +2999,8 @@ async function loadDay(dateStr){
   renderWater();
   renderSummary();
   updateStreak();
+  renderTrainingAdvice();
+  loadInbodyScans().then(renderInbodyHistory);
 }
 
 async function saveDay(){
@@ -3036,6 +3142,174 @@ function showSourceInfo(i){
   modal.style.display='flex';
 }
 
+const MUSCLE_GROUPS = [
+  {key:'Upper', label:'Upper (อก/หลัง/ไหล่/แขน)', names:['เวท - Upper']},
+  {key:'Lower', label:'Lower (ขา)', names:['เวท - Lower']},
+  {key:'Booty', label:'Booty/Glutes (สะโพก)', names:['เวท - Booty/Glutes']},
+  {key:'FullBody', label:'Full Body', names:['เวท - Full Body','BodyPump (คลาส)']},
+  {key:'Core', label:'Core/Abs', names:['เวท - Core/Abs']},
+];
+const CARDIO_NAMES = ['วิ่ง','เดินเร็ว','เดินขึ้นเนิน/ทางชัน','เดินขึ้นบันได','ว่ายน้ำ','เล่นเทนนิส','ปั่นจักรยาน'];
+
+function classifyExercise(name){
+  const mg = MUSCLE_GROUPS.find(g=>g.names.includes(name));
+  if(mg) return mg.key;
+  if(CARDIO_NAMES.includes(name)) return 'Cardio';
+  return 'Other';
+}
+
+async function renderTrainingAdvice(){
+  const box = document.getElementById('trainAdviceBox');
+  const recoveryBox = document.getElementById('recoveryInsight');
+  if(!box) return;
+  const weightKeys = MUSCLE_GROUPS.map(g=>g.key);
+  const LOOKBACK_DAYS = 10;
+  const sevColor = {high:'#C24C4C', medium:'#D98A3D', good:'#5FAE6E'};
+
+  try{
+    const refDate = new Date(currentDate+'T00:00:00');
+    const dayLogs = [];
+    for(let i=0;i<LOOKBACK_DAYS;i++){
+      const d = new Date(refDate);
+      d.setDate(d.getDate()-i);
+      const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      let exs = [], restingHR = null, sleep = null;
+      if(ds === currentDate){
+        exs = dayData.exercises || [];
+        restingHR = dayData.restingHR ?? null;
+        sleep = dayData.sleep ?? null;
+      } else {
+        try{
+          const r = await window.storage.get('entries:'+ds, false);
+          if(r && r.value){
+            const data = JSON.parse(r.value);
+            exs = data.exercises || [];
+            restingHR = data.restingHR ?? null;
+            sleep = data.sleep ?? null;
+          }
+        }catch(e){ exs = []; }
+      }
+      const groups = new Set(exs.map(e=>classifyExercise(e.name)).filter(g=>g!=='Other'));
+      dayLogs.push({ds, daysAgo:i, groups, exs, restingHR, sleep});
+    }
+
+    const lastTrained = {};
+    weightKeys.forEach(k=>lastTrained[k]=null);
+    let weightSessionsThisWeek = 0;
+
+    dayLogs.forEach(day=>{
+      // คลาสแบบ Full Body (เช่น BodyPump) ทำงานแทบทุกกลุ่มกล้ามเนื้อในครั้งเดียว
+      // เลยนับว่า "เล่นแล้ว" ให้ทุกกลุ่ม ไม่ใช่แค่กลุ่ม FullBody เฉยๆ ไม่งั้นระบบจะเตือนผิดว่ายังไม่ได้เล่น Upper/Lower/Booty/Core ทั้งที่เพิ่งเล่น BodyPump ไป
+      const groupsToCredit = day.groups.has('FullBody') ? weightKeys : [...day.groups];
+      groupsToCredit.forEach(g=>{
+        if(weightKeys.includes(g) && lastTrained[g]===null){ lastTrained[g]=day.daysAgo; }
+      });
+      if(day.daysAgo<7 && [...day.groups].some(g=>weightKeys.includes(g))){ weightSessionsThisWeek++; }
+    });
+
+    // หมายเหตุ: เล่นเวททุกวันไม่ใช่ปัญหา ถ้าสลับกลุ่มกล้ามเนื้อ (เช่น Upper/Lower/Core คนละวัน) — ของจริงที่ต้องระวังคือ
+    // (1) เล่น "กลุ่มเดียวกันซ้ำ" โดยไม่มีวันพักคั่น และ (2) ไม่มีวันพักเลยทั้งสัปดาห์ ไม่ใช่แค่จำนวนวันติดกัน
+    const sameGroupBackToBack = weightKeys.filter(key=>{
+      const todayHas = dayLogs[0] && dayLogs[0].groups.has(key);
+      const yesterdayHas = dayLogs[1] && dayLogs[1].groups.has(key);
+      return todayHas && yesterdayHas;
+    }).map(key=>MUSCLE_GROUPS.find(g=>g.key===key).label);
+
+    const noRestInWeek = dayLogs.slice(0,7).every(d=>[...d.groups].some(g=>weightKeys.includes(g)));
+
+    // --- Recovery: ชีพจรขณะพักเทียบค่าเฉลี่ย 7 วันก่อนหน้า + ความล้า + การนอน ---
+    const pastHRs = dayLogs.filter(d=>d.daysAgo>=1 && d.daysAgo<=7 && d.restingHR!=null).map(d=>d.restingHR);
+    const avgHR = pastHRs.length>0 ? pastHRs.reduce((s,v)=>s+v,0)/pastHRs.length : null;
+    const todayHR = dayData.restingHR ?? null;
+    const todaySoreness = dayData.soreness ?? null;
+    const recoveryLines = [];
+    let recoveryFlag = false;
+
+    if(todayHR!=null && avgHR!=null){
+      const diff = todayHR - avgHR;
+      if(diff >= 6){
+        recoveryLines.push({sev:'high', icon:'🔴', text:`ชีพจรขณะพักวันนี้ ${todayHR} bpm สูงกว่าค่าเฉลี่ย 7 วัน (${avgHR.toFixed(0)} bpm) อยู่ ${diff.toFixed(0)} — สัญญาณว่าร่างกายอาจพักฟื้นไม่พอหรือใกล้ป่วย ลองลดความหนักวันนี้ค่ะ`});
+        recoveryFlag = true;
+      } else {
+        recoveryLines.push({sev:'good', icon:'✅', text:`ชีพจรขณะพักวันนี้ ${todayHR} bpm ใกล้เคียงค่าเฉลี่ย (${avgHR.toFixed(0)} bpm) ร่างกายฟื้นตัวปกติดีค่ะ`});
+      }
+    } else if(todayHR==null){
+      recoveryLines.push({sev:'low', icon:'ℹ️', text:'ยังไม่ได้กรอกชีพจรขณะพักวันนี้ — กรอกจากนาฬิกาตอนตื่นนอนได้ที่การ์ด "การฟื้นตัว" ด้านล่าง'});
+    }
+
+    if(todaySoreness!=null && Number(todaySoreness)>=4){
+      recoveryLines.push({sev:'high', icon:'🔴', text:`ให้คะแนนความล้าวันนี้ ${todaySoreness}/5 (ค่อนข้างล้า) — ควรพักหรือเลือกกิจกรรมเบาๆ แทนการเล่นเวทหนักค่ะ`});
+      recoveryFlag = true;
+    }
+
+    const recentSleep = dayLogs.filter(d=>d.daysAgo<=2 && d.sleep!=null).map(d=>d.sleep);
+    if(recentSleep.length>0 && recentSleep.every(s=>s<6)){
+      recoveryLines.push({sev:'medium', icon:'🟡', text:`นอนน้อยกว่า 6 ชม. ติดต่อกันช่วงนี้ — นอนไม่พอทำให้ฟื้นตัวช้าและ cortisol สูง เสี่ยงเสียกล้ามเนื้อมากกว่าปกติ`});
+      recoveryFlag = true;
+    }
+
+    if(recoveryBox){
+      recoveryBox.innerHTML = recoveryLines.map(l=>`<div style="font-size:12px;color:${sevColor[l.sev]||'var(--muted)'};margin-bottom:6px;line-height:1.5;">${l.icon} ${l.text}</div>`).join('');
+    }
+
+    // --- Lift progression: เทียบ loadKg ของกลุ่มกล้ามเนื้อเดียวกัน ระหว่าง 2 ครั้งล่าสุดที่เล่น ---
+    const liftLines = [];
+    weightKeys.forEach(key=>{
+      const sessions = dayLogs
+        .filter(d=>d.groups.has(key))
+        .map(d=>{
+          const liftEx = d.exs.filter(e=>classifyExercise(e.name)===key && e.loadKg);
+          if(liftEx.length===0) return null;
+          const maxLoad = Math.max(...liftEx.map(e=>e.loadKg));
+          return {daysAgo:d.daysAgo, maxLoad};
+        })
+        .filter(Boolean)
+        .sort((a,b)=>a.daysAgo-b.daysAgo);
+      if(sessions.length>=2){
+        const latest = sessions[0], prev = sessions[1];
+        const label = MUSCLE_GROUPS.find(g=>g.key===key).label;
+        if(latest.maxLoad > prev.maxLoad){
+          liftLines.push({sev:'good', icon:'📈', text:`${label}: ยกหนักขึ้น ${latest.maxLoad}kg (ครั้งก่อน ${prev.maxLoad}kg) ก้าวหน้าดีมากค่ะ`});
+        } else if(latest.maxLoad < prev.maxLoad){
+          liftLines.push({sev:'medium', icon:'📉', text:`${label}: น้ำหนักที่ยกลดลงเหลือ ${latest.maxLoad}kg (ครั้งก่อน ${prev.maxLoad}kg) — อาจเป็นสัญญาณล้า/พักไม่พอ ไม่ใช่เรื่องผิดปกติถ้าเกิดนานๆ ครั้ง`});
+        } else {
+          liftLines.push({sev:'low', icon:'➖', text:`${label}: ยกเท่าเดิม ${latest.maxLoad}kg ทั้ง 2 ครั้งล่าสุด`});
+        }
+      }
+    });
+
+    const lines = [];
+    const neglected = MUSCLE_GROUPS.filter(g=> lastTrained[g.key]===null || lastTrained[g.key]>=6);
+
+    if(recoveryFlag){
+      lines.push({sev:'high', icon:'🔴', text:`สัญญาณการฟื้นตัววันนี้ไม่ค่อยดี (ดูรายละเอียดที่การ์ด "การฟื้นตัว" ด้านล่าง) — แนะนำพักหรือเบาลงวันนี้ ถึงจะมีกลุ่มกล้ามเนื้อที่ยังไม่ได้เล่นก็ตาม`});
+    } else if(sameGroupBackToBack.length>0){
+      lines.push({sev:'medium', icon:'🟡', text:`เล่น ${sameGroupBackToBack.join(', ')} ติดกับเมื่อวานเลย กล้ามเนื้อกลุ่มนี้อาจยังฟื้นตัวไม่เต็มที่ — ถ้าไม่ได้รู้สึกล้าก็เล่นต่อได้ตามปกติ แต่ถ้าเริ่มล้าแนะนำสลับไปกลุ่มอื่นแทน`});
+    } else if(neglected.length>0){
+      const names = neglected.map(g=>g.label).join(', ');
+      lines.push({sev:'high', icon:'🟡', text:`ยังไม่ได้เล่น ${names} มา ${LOOKBACK_DAYS}+ วัน (หรือยังไม่เคยเลย) — วันนี้ลองจัดกลุ่มนี้ดูค่ะ`});
+    } else {
+      const sortedByLast = [...MUSCLE_GROUPS].sort((a,b)=>(lastTrained[b.key]??-1)-(lastTrained[a.key]??-1));
+      const suggestion = sortedByLast[0];
+      lines.push({sev:'good', icon:'✅', text:`ครบทุกกลุ่มกล้ามเนื้อในช่วงนี้แล้ว — วันนี้แนะนำ ${suggestion.label} (เล่นล่าสุดเมื่อ ${lastTrained[suggestion.key]} วันก่อน)`});
+    }
+
+    if(weightSessionsThisWeek < 4){
+      lines.push({sev:'medium', icon:'🟡', text:`สัปดาห์นี้เล่นเวทไปแค่ ${weightSessionsThisWeek} วัน — เพิ่มได้อีกค่ะ ไหวแค่ไหนเพิ่มได้เลย (4-6 วัน/สัปดาห์ก็ได้ถ้าร่างกายไหว) แค่สลับกลุ่มกล้ามเนื้อให้แต่ละกลุ่มได้พักบ้างก็พอ`});
+    } else if(noRestInWeek){
+      lines.push({sev:'medium', icon:'🟡', text:`เล่นเวทไปแล้ว ${weightSessionsThisWeek} วัน และไม่มีวันพักเลยใน 7 วันที่ผ่านมา — ถึงจะชอบออกกำลังกายแค่ไหน ร่างกายก็ต้องการอย่างน้อย 1 วันเต็มๆ ที่ไม่มีเวทเลยต่อสัปดาห์ เพื่อให้ระบบประสาทและฮอร์โมนได้พักด้วย ไม่ใช่แค่กล้ามเนื้อ`});
+    } else {
+      lines.push({sev:'good', icon:'✅', text:`สัปดาห์นี้เล่นเวทไปแล้ว ${weightSessionsThisWeek} วัน พร้อมมีวันพัก อยู่ในเกณฑ์ที่ดีมากค่ะ`});
+    }
+
+    liftLines.forEach(l=>lines.push(l));
+
+    box.innerHTML = lines.map(l=>`<div style="font-size:12.5px;color:${sevColor[l.sev]||'var(--muted)'};margin-bottom:6px;line-height:1.5;">${l.icon} ${l.text}</div>`).join('');
+  }catch(e){
+    box.innerHTML = '<div class="empty-hint">ยังไม่มีข้อมูลพอให้วิเคราะห์ค่ะ ลองบันทึกการออกกำลังกายสักสองสามวันก่อนนะคะ</div>';
+  }
+}
+
 function renderExList(){
   const list = document.getElementById('exList');
   const empty = document.getElementById('exEmpty');
@@ -3044,7 +3318,8 @@ function renderExList(){
   dayData.exercises.forEach((ex, i)=>{
     const row = document.createElement('div');
     row.className = 'item-row';
-    row.innerHTML = `<div><div class="name">${escapeHtml(ex.name)}</div><div class="meta">${ex.minutes} นาที • เผา ${ex.kcal} kcal</div></div>
+    const liftMeta = ex.loadKg ? ` • ${escapeHtml(ex.moveName||'')} ${ex.loadKg}kg${ex.sets?` x${ex.sets}`:''}${ex.reps?`x${ex.reps}`:''}`.trim() : '';
+    row.innerHTML = `<div><div class="name">${escapeHtml(ex.name)}</div><div class="meta">${ex.minutes} นาที • เผา ${ex.kcal} kcal${liftMeta}</div></div>
       <div class="right"><button class="del-btn" onclick="removeExercise(${i})">✕</button></div>`;
     list.appendChild(row);
   });
@@ -3072,6 +3347,33 @@ function setBar(id, current, target, isLimit){
   if(pctEl) pctEl.textContent = Math.round(pct) + '%' + (pct>100 ? ' เกินขีดจำกัด ⚠️' : '');
 }
 
+function netExerciseKcal(ex, bmr){
+  // แคลที่กรอกจากเครื่องออกกำลังกายเป็นค่า "รวม" ที่มี BMR ของช่วงเวลานั้นปนอยู่แล้ว
+  // (ร่างกายเผา BMR อยู่ตลอดเวลาไม่ว่าจะออกกำลังกายหรือไม่) ส่วน TDEE ที่หักออกไปทั้งวันก็นับ BMR ไปแล้วเช่นกัน
+  // ถ้าเอาตัวเลขจากเครื่องไปหักซ้ำอีกที จะเป็นการหัก BMR ของช่วงเวลานั้นซ้ำสองรอบ
+  // จึงหัก BMR เฉพาะช่วงเวลาที่ออกกำลังกายออกจากตัวเลขเครื่องก่อน เหลือเฉพาะส่วนที่เผาเพิ่มจริงๆ
+  const minutes = Number(ex.minutes||0);
+  const kcal = Number(ex.kcal||0);
+  const bmrDuringExercise = (Number(bmr||0) / 1440) * minutes;
+  return Math.max(0, kcal - bmrDuringExercise);
+}
+
+function computeCarbMinToday(){
+  // คาร์บขั้นต่ำที่ร่างกายต้องการ "วันนี้" ตามกิจกรรมจริงที่กรอกไว้ ไม่ใช่เลขตายตัวทุกวัน
+  // ฐาน 80g = พอสำหรับสมอง/การทำงานพื้นฐานวันพัก
+  // +30g ถ้ามีเล่นเวทวันนี้ (ต้องการเติม glycogen ให้กล้ามเนื้อ)
+  // + ตามนาทีคาร์ดิโอ (ประมาณ 10g ต่อ 30 นาที เผื่อเชื้อเพลิงระหว่างออกกำลังกาย) สูงสุด +40g
+  const BASE = 80;
+  const exercises = dayData.exercises || [];
+  const weightKeys = MUSCLE_GROUPS.map(g=>g.key);
+  const hasWeightSession = exercises.some(e=>weightKeys.includes(classifyExercise(e.name)));
+  const cardioMinutes = exercises.filter(e=>classifyExercise(e.name)==='Cardio').reduce((s,e)=>s+Number(e.minutes||0),0);
+  let total = BASE;
+  if(hasWeightSession) total += 30;
+  total += Math.min(40, Math.round(cardioMinutes/30*10));
+  return total;
+}
+
 function renderSummary(){
   const totalKcal = dayData.foods.reduce((s,f)=>s+Number(f.caloriesKcal||0),0);
   const totalPro = dayData.foods.reduce((s,f)=>s+Number(f.proteinG||0),0);
@@ -3083,7 +3385,8 @@ function renderSummary(){
   const net = totalKcal - burned;
 
   document.getElementById('calValue').textContent = Math.round(totalKcal);
-  document.getElementById('calTarget').textContent = `เป้า ${targets.calMin}-${targets.calMax}`;
+  document.getElementById('calTarget').textContent = `เป้า ${targets.calMin}-${targets.calMax}` +
+    (totalKcal>targets.calMax ? ` • เกินแล้ว ${Math.round(totalKcal-targets.calMax)} kcal` : '');
   setBar('cal', totalKcal, targets.calMax, false);
 
   document.getElementById('proValue').textContent = fmt1(totalPro);
@@ -3093,20 +3396,32 @@ function renderSummary(){
   proBarEl.className = 'nutri-bar-fill' + (totalPro>=targets.proMin ? ' good' : '');
   document.getElementById('proPct').textContent = totalPro>=targets.proMin ? 'ถึงเป้าแล้ว ✓' : Math.round(totalPro/targets.proMin*100)+'%';
 
+  const carbMinToday = computeCarbMinToday();
   document.getElementById('carbValue').textContent = fmt1(totalCarb);
-  document.getElementById('carbTarget').textContent = `เป้า ${targets.carbMax} g`;
-  setBar('carb', totalCarb, targets.carbMax, false);
+  let carbTargetText;
+  if(totalCarb > targets.carbMax){
+    carbTargetText = `เพดาน ${targets.carbMax}g • เกินไปแล้ว ${fmt1(totalCarb-targets.carbMax)}g — มื้อต่อไปตัดคาร์บเลยค่ะ`;
+  } else if(totalCarb < carbMinToday){
+    carbTargetText = `ขั้นต่ำวันนี้ ~${carbMinToday}g (ตามกิจกรรมวันนี้) • ยังขาดอีก ${fmt1(carbMinToday-totalCarb)}g`;
+  } else {
+    carbTargetText = `ขั้นต่ำวันนี้ ~${carbMinToday}g ✓ • เหลือได้อีก ${fmt1(targets.carbMax-totalCarb)}g ก่อนถึงเพดาน ${targets.carbMax}g`;
+  }
+  document.getElementById('carbTarget').textContent = carbTargetText;
+  setBar('carb', totalCarb, targets.carbMax, true);
 
   document.getElementById('fatValue').textContent = fmt1(totalFat);
-  document.getElementById('fatTarget').textContent = `เป้า ${targets.fatMax} g`;
-  setBar('fat', totalFat, targets.fatMax, false);
+  document.getElementById('fatTarget').textContent = `เป้า ${targets.fatMax} g` +
+    (totalFat<=targets.fatMax ? ` • เหลือ ${fmt1(targets.fatMax-totalFat)}g` : ` • เกินงบไขมัน ${fmt1(totalFat-targets.fatMax)}g — ลดของทอด/มันมื้อต่อไปค่ะ`);
+  setBar('fat', totalFat, targets.fatMax, true);
 
   document.getElementById('sugValue').textContent = fmt1(totalSugar);
-  document.getElementById('sugTarget').textContent = `จากขีดจำกัด ${targets.sugarLimit} g`;
+  document.getElementById('sugTarget').textContent = `จากขีดจำกัด ${targets.sugarLimit} g` +
+    (totalSugar<=targets.sugarLimit ? ` • เหลือ ${fmt1(targets.sugarLimit-totalSugar)}g` : ` • เกินขีดจำกัด ${fmt1(totalSugar-targets.sugarLimit)}g แล้วค่ะ`);
   setBar('sug', totalSugar, targets.sugarLimit, true);
 
   document.getElementById('sodValue').textContent = fmtInt(totalSodium);
-  document.getElementById('sodTarget').textContent = `จากขีดจำกัด ${targets.sodiumLimit.toLocaleString()} mg`;
+  document.getElementById('sodTarget').textContent = `จากขีดจำกัด ${targets.sodiumLimit.toLocaleString()} mg` +
+    (totalSodium<=targets.sodiumLimit ? ` • เหลือ ${fmtInt(targets.sodiumLimit-totalSodium)}mg` : ` • เกินขีดจำกัด ${fmtInt(totalSodium-targets.sodiumLimit)}mg แล้วค่ะ`);
   setBar('sod', totalSodium, targets.sodiumLimit, true);
 
   document.getElementById('netValue').textContent = Math.round(net);
@@ -3115,11 +3430,12 @@ function renderSummary(){
   const activityLevel = dayData.activityLevel || 'office';
   const multiplier = ACTIVITY_MULTIPLIERS[activityLevel] || 1.375;
   const tdee = targets.bmr * multiplier;
-  const trueNet = totalKcal - tdee - burned;
+  const netBurned = dayData.exercises.reduce((s,e)=>s+netExerciseKcal(e, targets.bmr),0);
+  const trueNet = totalKcal - tdee - netBurned;
   document.getElementById('trueNetValue').textContent = (trueNet>0?'+':'') + Math.round(trueNet);
-  document.getElementById('trueNetSub').textContent = `TDEE วันนี้ ~${Math.round(tdee)} kcal (BMR ${targets.bmr} × ${multiplier})${burned>0?` + ออกกำลังกาย ${Math.round(burned)} kcal`:''}`;
+  document.getElementById('trueNetSub').textContent = `TDEE วันนี้ ~${Math.round(tdee)} kcal (BMR ${targets.bmr} × ${multiplier})${netBurned>0?` + เผาเพิ่มจากออกกำลังกาย ${Math.round(netBurned)} kcal (หัก BMR ช่วงออกกำลังกายแล้ว จากเครื่อง ${Math.round(burned)} kcal)`:''}`;
 
-  renderNetInsight(totalKcal, trueNet, burned, targets.calMin, targets.calMax);
+  renderNetInsight(totalKcal, trueNet, netBurned, targets.calMin, targets.calMax);
   renderMacroPie(totalPro, totalCarb, totalFat);
 
   document.getElementById('calCard').onclick = ()=>showNutrientInfo('cal', totalKcal, targets.calMax, totalKcal>0 && totalKcal<targets.calMin);
@@ -3130,6 +3446,90 @@ function renderSummary(){
   document.getElementById('sodCard').onclick = ()=>showNutrientInfo('sod', totalSodium, targets.sodiumLimit, false);
 
   updateMascot(totalKcal, totalPro, burned);
+  renderMealRecommendation(totalKcal, totalPro, totalCarb, totalFat, carbMinToday);
+}
+
+function renderMealRecommendation(totalKcal, totalPro, totalCarb, totalFat, carbMinToday){
+  const box = document.getElementById('mealRecommendation');
+  if(!box) return;
+
+  const carbGap = carbMinToday - totalCarb;       // >0 = ยังขาด, <=0 = พอแล้ว/เกิน
+  const carbOverMax = totalCarb - targets.carbMax; // >0 = เกินเพดานแล้ว
+  const proGap = targets.proMin - totalPro;        // >0 = ยังขาด
+  const calGapToMin = targets.calMin - totalKcal;  // >0 = กินได้อีกก่อนถึงขั้นต่ำ
+  const calOverMax = totalKcal - targets.calMax;   // >0 = เกินเป้าสูงสุดแล้ว
+
+  const lines = [];
+
+  // --- คาร์บ ---
+  if(carbOverMax > 0){
+    lines.push({icon:'🔴', text:`คาร์บ: เกินเพดานวันนี้ไปแล้ว ${fmt1(carbOverMax)}g — พอแล้วค่ะ มื้อที่เหลือตัดคาร์บไปเลย`});
+  } else if(carbGap > 0){
+    lines.push({icon:'🍚', text:`คาร์บ: ยังขาดอีก ~${fmt1(carbGap)}g ถึงจะถึงขั้นต่ำที่ควรได้วันนี้ (คำนวณจากกิจกรรมที่ทำวันนี้) — เพิ่มข้าว/เส้น/ผลไม้ได้เลยค่ะ`});
+  } else {
+    lines.push({icon:'✅', text:`คาร์บ: วันนี้ได้พอแล้ว (${fmt1(totalCarb)}g) ไม่ต้องเพิ่มก็ได้`});
+  }
+
+  // --- โปรตีน ---
+  if(proGap > 0){
+    lines.push({icon:'🍗', text:`โปรตีน: ยังขาดอีก ~${fmt1(proGap)}g ถึงจะถึงเป้าขั้นต่ำ — เพิ่มไข่ อกไก่ เต้าหู้ หรือเวย์โปรตีนได้ค่ะ`});
+  } else if(totalPro > targets.proMax){
+    lines.push({icon:'🟡', text:`โปรตีน: เกินเป้าสูงสุดไปเล็กน้อย (${fmt1(totalPro)}g) ไม่ได้อันตรายอะไร แต่ไม่จำเป็นต้องเพิ่มอีกแล้วค่ะ`});
+  } else {
+    lines.push({icon:'✅', text:`โปรตีน: ครบเป้าแล้ว (${fmt1(totalPro)}g) เก่งมากค่ะ`});
+  }
+
+  // --- แคลรวม ---
+  if(calOverMax > 0){
+    lines.push({icon:'🔴', text:`แคลรวม: เกินเป้าสูงสุดไปแล้ว ${Math.round(calOverMax)} kcal — มื้อที่เหลือควรเบาลงหรืองดไปเลยค่ะ`});
+  } else if(calGapToMin > 0){
+    lines.push({icon:'🔥', text:`แคลรวม: ยังกินได้อีก ~${Math.round(calGapToMin)} kcal ก่อนถึงเป้าขั้นต่ำ (${targets.calMin}) ไม่ต้องกลัวอ้วนถ้ายังไม่ถึงเลขนี้`});
+  } else {
+    lines.push({icon:'✅', text:`แคลรวม: อยู่ในช่วงเป้าหมายแล้ว (${Math.round(totalKcal)} kcal)`});
+  }
+
+  // --- สรุปเป็นคำแนะนำมื้อต่อไปแบบเดียว ---
+  let suggestion = '';
+  const needCarb = carbGap > 0, needPro = proGap > 0;
+  if(needCarb && needPro){
+    suggestion = `มื้อต่อไปลองกินอาหารที่มีทั้งคาร์บ+โปรตีนในมื้อเดียว เช่น ข้าว+อกไก่/ปลา/เต้าหู้ จะเติมทั้งสองอย่างพร้อมกันได้ตามเป้าที่ยังขาดอยู่`;
+  } else if(needCarb){
+    suggestion = `โปรตีนพอแล้ว แค่เพิ่มแหล่งคาร์บ เช่น ข้าว เส้น มันหวาน หรือผลไม้ ก็พอ ไม่ต้องเพิ่มโปรตีนอีก`;
+  } else if(needPro){
+    suggestion = `คาร์บพอแล้ว แค่เพิ่มแหล่งโปรตีน เช่น ไข่ อกไก่ เต้าหู้ หรือเวย์ ก็พอ ไม่ต้องเพิ่มคาร์บอีก`;
+  } else if(carbOverMax>0 || calOverMax>0){
+    suggestion = `ตอนนี้ได้ครบหรือเกินเป้าแล้วทั้งคาร์บและโปรตีน มื้อที่เหลือเน้นผักหรือโปรตีนไขมันต่ำแทนได้ค่ะ`;
+  } else {
+    suggestion = `ตอนนี้สมดุลดีค่ะ มื้อต่อไปกินตามปกติได้เลย ไม่ต้องพยายามเพิ่มอะไรเป็นพิเศษ`;
+  }
+
+  box.innerHTML = lines.map(l=>`<div style="font-size:12.5px;line-height:1.6;margin-bottom:6px;">${l.icon} ${l.text}</div>`).join('')
+    + `<div style="font-size:12.5px;line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><b>สรุป:</b> ${suggestion}</div>`;
+}
+
+function macroStatus(kind, value){
+  if(kind==='pro'){
+    if(value < targets.proMin) return {label:'ต่ำกว่าเป้า', cls:'over', icon:'🔴'};
+    if(value > targets.proMax) return {label:'สูงกว่าเป้า', cls:'warn', icon:'🟡'};
+    return {label:'อยู่ในเป้า', cls:'good', icon:'✅'};
+  }
+  if(kind==='carb'){
+    if(value > targets.carbMax) return {label:'สูงเกินเป้า', cls:'warn', icon:'🟡'};
+    return {label:'อยู่ในเป้า', cls:'good', icon:'✅'};
+  }
+  if(kind==='fat'){
+    if(value > targets.fatMax) return {label:'สูงเกินเป้า', cls:'warn', icon:'🟡'};
+    return {label:'อยู่ในเป้า', cls:'good', icon:'✅'};
+  }
+  return {label:'', cls:'', icon:''};
+}
+
+function macroLegendLine(color, name, grams, pct, status){
+  const statusColor = status.cls==='over' ? '#C24C4C' : status.cls==='warn' ? '#D98A3D' : '#5FAE6E';
+  return `<div style="font-size:12px;">
+    <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;"></span>${name} ${fmt1(grams)}g (${Math.round(pct)}%)
+    <div style="font-size:10.5px;color:${statusColor};margin-left:16px;">${status.icon} ${status.label}</div>
+  </div>`;
 }
 
 function renderMacroPie(pro, carb, fat){
@@ -3167,9 +3567,9 @@ function renderMacroPie(pro, carb, fat){
   </svg>`;
 
   const legend = `<div style="display:flex;flex-direction:column;gap:8px;justify-content:center;">
-    <div style="font-size:12px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#8B6FD1;margin-right:6px;"></span>โปรตีน ${fmt1(pro)}g (${Math.round(proPct)}%)</div>
-    <div style="font-size:12px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#EC8FB4;margin-right:6px;"></span>คาร์บ ${fmt1(carb)}g (${Math.round(carbPct)}%)</div>
-    <div style="font-size:12px;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F2C46D;margin-right:6px;"></span>ไขมัน ${fmt1(fat)}g (${Math.round(fatPct)}%)</div>
+    ${macroLegendLine('#8B6FD1', 'โปรตีน', pro, proPct, macroStatus('pro', pro))}
+    ${macroLegendLine('#EC8FB4', 'คาร์บ', carb, carbPct, macroStatus('carb', carb))}
+    ${macroLegendLine('#F2C46D', 'ไขมัน', fat, fatPct, macroStatus('fat', fat))}
   </div>`;
 
   wrap.innerHTML = `<div style="display:flex;gap:20px;align-items:center;justify-content:center;">${svg}${legend}</div>`;
@@ -3232,7 +3632,7 @@ function showDailyAnalysis(){
   } else if(totalKcal < targets.calMin){
     issues.push({sev:'high', text:`กินไปแค่ ${Math.round(totalKcal)} kcal ต่ำกว่าเป้าขั้นต่ำ (${targets.calMin}) ลองเพิ่มมื้อหรือของว่างอีกหน่อยค่ะ`});
   } else if(totalKcal > targets.calMax){
-    issues.push({sev:'medium', text:`กินไป ${Math.round(totalKcal)} kcal เกินเป้าสูงสุด (${targets.calMax}) ไปแล้ว`});
+    issues.push({sev:'high', text:`กินไป ${Math.round(totalKcal)} kcal เกินเป้าสูงสุด (${targets.calMax}) ไปแล้ว ${Math.round(totalKcal-targets.calMax)} kcal — มื้อที่เหลือวันนี้ควรเบาลงหรืองดไปเลยค่ะ`});
   } else {
     issues.push({sev:'good', text:`แคลอรี่อยู่ในเป้าหมายดีแล้ว (${Math.round(totalKcal)} kcal)`});
   }
@@ -3246,17 +3646,20 @@ function showDailyAnalysis(){
     }
   }
 
-  if(totalCarb > targets.carbMax*1.2){
-    issues.push({sev:'low', text:`คาร์บวันนี้สูงกว่าเป้าพอสมควร (${fmt1(totalCarb)}g เทียบเป้า ${targets.carbMax}g)`});
+  const carbMinToday = computeCarbMinToday();
+  if(totalCarb > targets.carbMax){
+    issues.push({sev:'medium', text:`คาร์บเกินงบแล้ว (${fmt1(totalCarb)}g / เป้า ${targets.carbMax}g) — มื้อที่เหลือวันนี้ตัดคาร์บไปเลยค่ะ ไม่ต้องรอ`});
+  } else if(foods.length>0 && totalCarb < carbMinToday){
+    issues.push({sev:'low', text:`คาร์บวันนี้ ${fmt1(totalCarb)}g ยังไม่ถึงขั้นต่ำที่แนะนำสำหรับกิจกรรมวันนี้ (~${carbMinToday}g) ไม่จำเป็นต้องเพิ่มถ้าไม่หิว แต่ถ้าเล่นเวทวันนี้แล้วรู้สึกไม่มีแรงกลางเซ็ต ลองเพิ่มคาร์บอีกนิดได้ค่ะ`});
   }
-  if(totalFat > targets.fatMax*1.2){
-    issues.push({sev:'low', text:`ไขมันวันนี้สูงกว่าเป้าพอสมควร (${fmt1(totalFat)}g เทียบเป้า ${targets.fatMax}g)`});
+  if(totalFat > targets.fatMax){
+    issues.push({sev:'medium', text:`ไขมันเกินงบแล้ว (${fmt1(totalFat)}g / เป้า ${targets.fatMax}g) — เลี่ยงของทอด/ของมันมื้อที่เหลือค่ะ`});
   }
   if(totalSugar > targets.sugarLimit){
-    issues.push({sev:'medium', text:`น้ำตาลเกินขีดจำกัดแล้ว (${fmt1(totalSugar)}g / ${targets.sugarLimit}g) ลองสังเกตว่าเกินจากเครื่องดื่มหรือของหวานหรือเปล่าค่ะ`});
+    issues.push({sev:'medium', text:`น้ำตาลเกินขีดจำกัดแล้ว (${fmt1(totalSugar)}g / ${targets.sugarLimit}g) งดของหวาน/เครื่องดื่มหวานมื้อที่เหลือเลยค่ะ`});
   }
   if(totalSodium > targets.sodiumLimit){
-    issues.push({sev:'medium', text:`โซเดียมเกินขีดจำกัดแล้ว (${fmtInt(totalSodium)}mg / ${targets.sodiumLimit}mg) ระวังของแปรรูป/น้ำจิ้มมื้อต่อไปนะคะ`});
+    issues.push({sev:'medium', text:`โซเดียมเกินขีดจำกัดแล้ว (${fmtInt(totalSodium)}mg / ${targets.sodiumLimit}mg) เลี่ยงของแปรรูป/น้ำจิ้มมื้อต่อไปเลยนะคะ`});
   }
 
   if(exercises.length===0){
@@ -3363,6 +3766,26 @@ function clearFoodForm(){
   document.getElementById('addFoodBtn').textContent = '+ เพิ่มมื้ออาหาร';
 }
 
+function checkStrictBudget(){
+  const totalKcal = dayData.foods.reduce((s,f)=>s+Number(f.caloriesKcal||0),0);
+  const totalCarb = dayData.foods.reduce((s,f)=>s+Number(f.carbsG||0),0);
+  const totalFat = dayData.foods.reduce((s,f)=>s+Number(f.fatG||0),0);
+  const totalSugar = dayData.foods.reduce((s,f)=>s+Number(f.sugarG||0),0);
+  const totalSodium = dayData.foods.reduce((s,f)=>s+Number(f.sodiumMg||0),0);
+
+  if(totalKcal > targets.calMax){
+    showToast(`⚠️ เกินแคลเป้าหมายวันนี้แล้ว ${Math.round(totalKcal-targets.calMax)} kcal — มื้อต่อไปควรเบาลงหรืองดไปเลยค่ะ`, 4000);
+  } else if(totalCarb > targets.carbMax){
+    showToast(`⚠️ เกินงบคาร์บวันนี้แล้ว ${fmt1(totalCarb-targets.carbMax)}g — มื้อต่อไปตัดคาร์บไปเลยค่ะ ไม่ต้องกลัวหิว`, 4000);
+  } else if(totalSugar > targets.sugarLimit){
+    showToast(`⚠️ น้ำตาลเกินขีดจำกัดแล้ว ${fmt1(totalSugar-targets.sugarLimit)}g — งดของหวาน/เครื่องดื่มหวานมื้อต่อไปค่ะ`, 4000);
+  } else if(totalSodium > targets.sodiumLimit){
+    showToast(`⚠️ โซเดียมเกินขีดจำกัดแล้ว ${fmtInt(totalSodium-targets.sodiumLimit)}mg — เลี่ยงของแปรรูป/น้ำจิ้มมื้อต่อไปค่ะ`, 4000);
+  } else if(totalFat > targets.fatMax){
+    showToast(`⚠️ เกินงบไขมันวันนี้แล้ว ${fmt1(totalFat-targets.fatMax)}g — มื้อต่อไปเลี่ยงของทอด/มันเยอะค่ะ`, 4000);
+  }
+}
+
 function addFood(){
   const name = document.getElementById('foodSearchInput').value.trim();
   const kcal = Number(document.getElementById('fKcal').value);
@@ -3413,6 +3836,7 @@ function addFood(){
 
   clearFoodForm();
   renderFoodList(); renderSummary(); saveDay();
+  checkStrictBudget();
 }
 
 function editFood(i){
@@ -3444,6 +3868,9 @@ function removeFood(i){
 function onExNameChange(){
   const sel = document.getElementById('exName');
   document.getElementById('exOtherRow').style.display = sel.value==='__other__' ? 'flex' : 'none';
+  const weightKeys = MUSCLE_GROUPS.map(g=>g.key);
+  const isWeight = weightKeys.includes(classifyExercise(sel.value));
+  document.getElementById('exLiftRow').style.display = isWeight ? 'block' : 'none';
 }
 
 function addExercise(){
@@ -3454,16 +3881,86 @@ function addExercise(){
   const minutes = Number(document.getElementById('exMin').value) || 0;
   const kcal = Number(document.getElementById('exKcal').value);
   if(!name || !kcal){ showToast('กรอกกิจกรรมและแคลอรี่ที่เผาด้วยค่ะ'); return; }
-  dayData.exercises.push({ name, minutes, kcal });
+
+  const entry = { name, minutes, kcal };
+  const weightKeys = MUSCLE_GROUPS.map(g=>g.key);
+  if(weightKeys.includes(classifyExercise(name))){
+    const moveName = document.getElementById('exMoveName').value.trim();
+    const loadKg = Number(document.getElementById('exLoadKg').value) || 0;
+    const sets = Number(document.getElementById('exSets').value) || 0;
+    const reps = Number(document.getElementById('exReps').value) || 0;
+    if(moveName) entry.moveName = moveName;
+    if(loadKg>0) entry.loadKg = loadKg;
+    if(sets>0) entry.sets = sets;
+    if(reps>0) entry.reps = reps;
+  }
+  dayData.exercises.push(entry);
+
   document.getElementById('exNameOther').value='';
   document.getElementById('exMin').value='';
   document.getElementById('exKcal').value='';
-  renderExList(); renderSummary(); saveDay();
+  document.getElementById('exMoveName').value='';
+  document.getElementById('exLoadKg').value='';
+  document.getElementById('exSets').value='';
+  document.getElementById('exReps').value='';
+  renderExList(); renderSummary(); saveDay(); renderTrainingAdvice();
 }
 
 function removeExercise(i){
   dayData.exercises.splice(i,1);
-  renderExList(); renderSummary(); saveDay();
+  renderExList(); renderSummary(); saveDay(); renderTrainingAdvice();
+}
+
+function getLatestWeight(){
+  // ใช้น้ำหนักที่กรอกไว้วันนี้ก่อน ถ้ายังไม่กรอกก็คืนค่า null (ให้ใช้ตัวเลขเฉลี่ยทั่วไปแทน)
+  return dayData.weight || null;
+}
+
+function renderMealPlanAdvice(){
+  const box = document.getElementById('mealPlanResult');
+  const type = document.getElementById('mealPlanExType').value;
+  const duration = Number(document.getElementById('mealPlanDuration').value) || 60;
+  const timing = document.getElementById('mealPlanTiming').value;
+  const weight = getLatestWeight();
+  const durationFactor = duration/60;
+
+  // สัดส่วนต่อน้ำหนักตัว (g/kg) ต่อการออกกำลังกาย 60 นาที อ้างอิงหลัก sports nutrition ทั่วไป
+  const ratios = type==='cardio'
+    ? { preCarb:0.5, prePro:0.15, postCarb:0.5, postPro:0.3 }
+    : { preCarb:0.4, prePro:0.25, postCarb:0.5, postPro:0.35 };
+
+  // ตัวเลขสำรองกรณียังไม่มีน้ำหนักในระบบ (ค่าเฉลี่ยทั่วไป ไม่ได้ปรับตามน้ำหนักตัว)
+  const fallback = type==='cardio'
+    ? { preCarb:25, prePro:10, postCarb:30, postPro:20 }
+    : { preCarb:20, prePro:15, postCarb:30, postPro:25 };
+
+  function calc(key){
+    if(weight) return Math.round(weight*ratios[key]*durationFactor);
+    return Math.round(fallback[key]*durationFactor);
+  }
+
+  const pre = { carb: calc('preCarb'), pro: calc('prePro') };
+  const post = { carb: calc('postCarb'), pro: calc('postPro') };
+
+  let html = '';
+  if(!weight){
+    html += `<div class="empty-hint" style="margin-bottom:8px;">ยังไม่มีน้ำหนักล่าสุดในระบบ เลยใช้ตัวเลขเฉลี่ยทั่วไปให้ก่อน ลองกรอกน้ำหนักวันนี้ในช่อง "น้ำหนัก" ด้านล่างแล้วกดคำนวณใหม่ จะได้ตัวเลขที่ตรงกับตัวเองมากขึ้นค่ะ</div>`;
+  }
+
+  if(timing==='before'){
+    html += `<div style="font-size:12.5px;line-height:1.8;">
+      <b>🕐 ก่อนออกกำลังกาย (1-2 ชม.ก่อน):</b> คาร์บ ~${pre.carb}g • โปรตีน ~${pre.pro}g<br>
+      <b>✅ หลังออกกำลังกาย (ภายใน 1-2 ชม.หลัง):</b> คาร์บ ~${post.carb}g • โปรตีน ~${post.pro}g
+    </div>`;
+  } else {
+    html += `<div style="font-size:12.5px;line-height:1.8;">
+      <b>✅ เพิ่งออกกำลังกายเสร็จ — กินมื้อนี้ได้เลยภายใน 1-2 ชม.นี้:</b><br>
+      คาร์บ ~${post.carb}g • โปรตีน ~${post.pro}g<br>
+      <span style="color:var(--muted);font-size:11.5px;">ไม่เป็นไรเลยค่ะที่เพิ่งมาจดหลังออกกำลังกายเสร็จ มื้อก่อนออกกำลังกายข้ามไปได้ ไม่จำเป็นต้องย้อนกิน แค่กินมื้อหลังนี้ให้ครบก็พอ</span>
+    </div>`;
+  }
+
+  box.innerHTML = html;
 }
 
 function renderExercisePlan(){
@@ -3578,6 +4075,103 @@ function saveWeight(){
   saveDay();
   showToast('บันทึกน้ำหนักแล้ว');
   renderTrendChart();
+}
+
+function saveRestingHR(){
+  const v = Number(document.getElementById('restingHR').value);
+  if(!v){ showToast('กรอกชีพจรขณะพักด้วยค่ะ'); return; }
+  dayData.restingHR = v;
+  saveDay();
+  showToast('บันทึกชีพจรขณะพักแล้ว');
+  renderTrainingAdvice();
+}
+
+function saveSoreness(){
+  const v = Number(document.getElementById('sorenessSelect').value);
+  if(!v){ showToast('เลือกระดับความล้าด้วยค่ะ'); return; }
+  dayData.soreness = v;
+  saveDay();
+  showToast('บันทึกความล้าแล้ว');
+  renderTrainingAdvice();
+}
+
+async function loadInbodyScans(){
+  try{
+    const res = await window.storage.get('settings:inbodyScans', false);
+    if(res && res.value) return JSON.parse(res.value);
+  }catch(e){}
+  return [];
+}
+
+async function saveInbodyScan(){
+  const weight = Number(document.getElementById('inbodyWeight').value) || null;
+  const fatPct = Number(document.getElementById('inbodyFatPct').value) || null;
+  const muscleKg = Number(document.getElementById('inbodyMuscle').value) || null;
+  const visceral = Number(document.getElementById('inbodyVisceral').value) || null;
+  const bmr = Number(document.getElementById('inbodyBmr').value) || null;
+
+  if(!weight && !fatPct && !muscleKg && !visceral && !bmr){
+    showToast('กรอกผลสแกนอย่างน้อย 1 ค่าค่ะ');
+    return;
+  }
+
+  const scans = await loadInbodyScans();
+  scans.push({ date: currentDate, weight, fatPct, muscleKg, visceral, bmr });
+  scans.sort((a,b)=>a.date.localeCompare(b.date));
+
+  try{
+    await window.storage.set('settings:inbodyScans', JSON.stringify(scans), false);
+  }catch(e){ showToast('บันทึกไม่สำเร็จ'); return; }
+
+  if(weight){ document.getElementById('weightKg').value = weight; dayData.weight = weight; saveDay(); renderTrendChart(); }
+
+  if(bmr && bmr>0){
+    targets.bmr = Math.round(bmr);
+    try{ await window.storage.set('settings:targets', JSON.stringify(targets), false); }catch(e){}
+    showToast(`บันทึกผลสแกนแล้ว อัปเดต BMR เป็น ${Math.round(bmr)} kcal ให้อัตโนมัติ`, 4000);
+  } else {
+    showToast('บันทึกผลสแกน InBody แล้วค่ะ');
+  }
+
+  document.getElementById('inbodyWeight').value = '';
+  document.getElementById('inbodyFatPct').value = '';
+  document.getElementById('inbodyMuscle').value = '';
+  document.getElementById('inbodyVisceral').value = '';
+  document.getElementById('inbodyBmr').value = '';
+
+  renderInbodyHistory(scans);
+  renderSummary();
+}
+
+function renderInbodyHistory(scans){
+  const box = document.getElementById('inbodyHistory');
+  if(!box) return;
+  if(!scans || scans.length===0){ box.innerHTML = '<div class="empty-hint">ยังไม่มีประวัติสแกน</div>'; return; }
+
+  const sorted = [...scans].sort((a,b)=>b.date.localeCompare(a.date));
+  const latest = sorted[0];
+  const prev = sorted[1];
+
+  let trendLine = '';
+  if(prev){
+    if(latest.fatPct!=null && prev.fatPct!=null){
+      const diff = latest.fatPct - prev.fatPct;
+      trendLine += `<div style="font-size:12px;color:${diff<0?'#5FAE6E':diff>0?'#C24C4C':'var(--muted)'};margin-bottom:4px;">${diff<0?'📉':diff>0?'📈':'➖'} % ไขมันเปลี่ยนจาก ${prev.fatPct}% → ${latest.fatPct}% (${diff>0?'+':''}${diff.toFixed(1)})</div>`;
+    }
+    if(latest.muscleKg!=null && prev.muscleKg!=null){
+      const diff = latest.muscleKg - prev.muscleKg;
+      trendLine += `<div style="font-size:12px;color:${diff>=0?'#5FAE6E':'#C24C4C'};margin-bottom:4px;">${diff>=0?'📈':'📉'} มวลกล้ามเนื้อเปลี่ยนจาก ${prev.muscleKg}kg → ${latest.muscleKg}kg (${diff>0?'+':''}${diff.toFixed(1)})</div>`;
+    }
+  }
+
+  const rows = sorted.slice(0,6).map(s=>`
+    <div class="hist-item">
+      <div class="hdate">${s.date}</div>
+      <div class="hist-grid">${s.weight?`น้ำหนัก ${s.weight}kg`:''}${s.fatPct?` • ไขมัน ${s.fatPct}%`:''}${s.muscleKg?` • กล้ามเนื้อ ${s.muscleKg}kg`:''}</div>
+      ${(s.visceral||s.bmr) ? `<div class="hist-grid">${s.visceral?`ไขมันช่องท้อง level ${s.visceral}`:''}${s.bmr?` • BMR ${s.bmr}kcal`:''}</div>` : ''}
+    </div>`).join('');
+
+  box.innerHTML = trendLine + rows;
 }
 
 async function updateStreak(){
