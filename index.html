@@ -397,6 +397,7 @@
 <div class="app">
 
   <div class="header">
+    <div id="saveIndicator" style="position:fixed; top:10px; right:12px; z-index:999; font-size:12px; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,0.85); color:#6b21a8; box-shadow:0 1px 4px rgba(0,0,0,0.12); opacity:0; transition:opacity .3s;"></div>
     <div class="eyebrow">สวัสดีค่ะ คิตตี้</div>
     <h1>บันทึกสุขภาพประจำวัน</h1>
     <div class="date-row">
@@ -995,6 +996,46 @@
   firebase.initializeApp(firebaseConfig);
   const _db = firebase.firestore();
 
+  // Keep writes safe offline / on a flaky connection: Firestore queues them
+  // locally first and syncs to the server in the background (survives closing
+  // the tab/app before the network request would have finished).
+  _db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    console.warn('Firestore offline persistence not enabled:', err.code);
+  });
+
+  // Tracks in-flight writes so we can show a "กำลังบันทึก..." indicator and
+  // warn before the page closes while something hasn't been saved yet.
+  let _pendingWrites = 0;
+  function _saveIndicatorEl(){ return document.getElementById('saveIndicator'); }
+  function _updateSaveIndicator(){
+    const el = _saveIndicatorEl();
+    if (!el) return;
+    if (_pendingWrites > 0) {
+      el.textContent = '🔄 กำลังบันทึก...';
+      el.style.opacity = '1';
+    } else {
+      el.textContent = '✅ บันทึกแล้ว';
+      el.style.opacity = '0.55';
+      clearTimeout(el._fadeTimer);
+      el._fadeTimer = setTimeout(() => { el.style.opacity = '0'; }, 1500);
+    }
+  }
+  function _trackWrite(promise) {
+    _pendingWrites++;
+    _updateSaveIndicator();
+    return promise.finally(() => {
+      _pendingWrites--;
+      _updateSaveIndicator();
+    });
+  }
+  window.addEventListener('beforeunload', (e) => {
+    if (_pendingWrites > 0) {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    }
+  });
+
   // Shim that mimics the original window.storage API (get/set/delete/list),
   // but backed by Firestore instead — so the rest of the app's code below
   // needs zero changes. Doc IDs = storage keys (colons are fine in Firestore IDs).
@@ -1005,11 +1046,11 @@
       return { key, value: doc.data().value, shared: !!shared };
     },
     async set(key, value, shared) {
-      await _db.collection('storage').doc(key).set({ value });
+      await _trackWrite(_db.collection('storage').doc(key).set({ value }));
       return { key, value, shared: !!shared };
     },
     async delete(key, shared) {
-      await _db.collection('storage').doc(key).delete();
+      await _trackWrite(_db.collection('storage').doc(key).delete());
       return { key, deleted: true, shared: !!shared };
     },
     async list(prefix, shared) {
