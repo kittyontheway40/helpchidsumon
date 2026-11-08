@@ -495,6 +495,11 @@
     #view-today.active > .section,#view-train.active > .section{margin-top:0;}
   }
   @media (min-width:1500px){ .app{max-width:1200px;zoom:1.3;} .tabbar{max-width:1560px;} }
+  .tr-seg{display:grid;grid-template-columns:44px minmax(0,1fr) minmax(0,1.2fr) 62px 24px;gap:6px;align-items:center;margin-top:6px;}
+  .tr-seg input{width:100%;min-width:0;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;padding:8px 8px;font-size:13px;background:var(--bg);color:var(--text);font-family:'Inter';}
+  .tr-seg .sb{font-size:11.5px;font-weight:600;text-align:center;padding:5px 0;border-radius:8px;}
+  .tr-seg.r .sb{background:var(--green-soft);color:#2f7d56;} .tr-seg.w .sb{background:var(--pink-soft);color:#b04b78;}
+  .tr-seg .sp{font-size:11px;color:var(--muted);text-align:right;}
 </style>
 </head>
 <body>
@@ -525,7 +530,7 @@
     <div class="section tr-sec" data-key="runlog">
       <div class="section-title"><h2>🏃‍♀️ บันทึกการวิ่ง</h2></div>
       <div>
-        <div class="tr-hint">กรอกจากหน้าสรุปของ Huawei Health: ระยะ • Duration • Avg heart rate • <b>Total calories</b> (ไม่ใช่ Active) — ไม่ต้องกรอกทุกช่อง ต้องมีแค่ระยะกับเวลา</div>
+        <div class="tr-hint">กรอกจากหน้าสรุปของ Huawei Health: ระยะ • Duration • Avg heart rate • <b>Total calories</b> (ไม่ใช่ Active) — ไม่ต้องกรอกทุกช่อง ต้องมีแค่ระยะกับเวลา • ถ้าวิ่งสลับเดิน ใช้ส่วน "วิ่งสลับเดิน" ด้านล่างเพื่อแยก pace ช่วงวิ่ง</div>
         <div class="tr-grid2">
           <label>วันที่<input type="date" id="trRunDate"></label>
           <label>สถานที่
@@ -558,6 +563,15 @@
           </label>
           <label>แคลที่เผา (ปล่อยว่างได้)<input type="number" id="trRunKcal" inputmode="decimal" placeholder="Total จากนาฬิกา"></label>
           <label>บันทึกเพิ่มเติม<input type="text" id="trRunNote" placeholder="เช่น ขาหนัก / อากาศร้อน"></label>
+        </div>
+        <div class="tr-sub" style="margin-top:12px">วิ่งสลับเดิน? แยกเป็นช่วงได้ <span style="font-weight:400;color:var(--muted)">(ดูจาก lap ต่อกม. ในนาฬิกา)</span></div>
+        <div class="tr-hint">กด "+ ช่วงวิ่ง" / "+ ช่วงเดิน" ใส่ระยะและเวลาแต่ละช่วง แอปจะรวมระยะ/เวลาทั้งหมดให้เอง และแยก pace ช่วงวิ่งจริงกับช่วงเดินให้ (ถ้าใส่ช่วง ไม่ต้องกรอกระยะ/เวลารวมด้านบน)</div>
+        <div id="trSegs"></div>
+        <div class="tr-row" style="margin-top:6px">
+          <button class="tr-btn ghost small" onclick="TR.addSeg('r')">+ ช่วงวิ่ง</button>
+          <button class="tr-btn ghost small" onclick="TR.addSeg('w')">+ ช่วงเดิน</button>
+          <button class="tr-btn ghost small" onclick="TR.repeatLast()">↻ ทำซ้ำคู่ล่าสุด</button>
+          <button class="tr-btn ghost small" onclick="TR.clearSegs()">ล้างช่วง</button>
         </div>
         <div class="tr-live" id="trRunLive">ใส่ระยะและเวลา เพื่อดู pace อัตโนมัติ</div>
         <div class="tr-row">
@@ -5453,6 +5467,8 @@ function allRuns(D){
   });
   return out.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.idx-b.idx);
 }
+const rpace = r => (r.runKm>0 && r.runSec>0) ? r.runSec/r.runKm : r.sec/r.km;
+const isMixed = r => r.runKm>0 && r.walkKm>0.05;
 function allHyrox(D){
   D = D||days(); const out=[];
   Object.keys(D).forEach(date=>{
@@ -5474,7 +5490,7 @@ function currentVdot(runs){
   const g=S.goals;
   if(g.ref && g.ref.km>0 && g.ref.sec>0) return {v:clamp(TR.vdot(g.ref.km,g.ref.sec),22,65), src:`จากผลวิ่งอ้างอิงของคุณ (${km1(g.ref.km)} กม. ${TR.fmtTime(g.ref.sec)})`, good:true};
   const cutoff = TR.addDays(todayISO(),-56); let best=0;
-  runs.forEach(r=>{ if(r.date>=cutoff && r.km>=2){ const v=TR.vdot(r.km,r.sec); if(v>best) best=v; } });
+  runs.forEach(r=>{ if(r.date>=cutoff && r.km>=2 && !isMixed(r)){ const v=TR.vdot(r.km,r.sec); if(v>best) best=v; } });
   if(best) return {v:clamp(best*1.04,22,65), src:'ประมาณจากการวิ่งที่บันทึกไว้ 8 สัปดาห์ล่าสุด (ถ้ามีผลวิ่งเร็วสุด กรอกในตั้งค่าจะแม่นกว่า)', good:false};
   return {v:28, src:'ค่าเริ่มต้นสำหรับเริ่มต้น — กรอกผลวิ่งเร็วสุดล่าสุดในตั้งค่า เพื่อให้ pace แม่นขึ้น', good:false};
 }
@@ -5565,7 +5581,7 @@ function renderToday(runs, D){
     <div class="tr-title">${T_ICON[d.t]||''} ${esc(d.title)}${d.km?` • ${km1(d.km)} กม.`:''} ${st.s==='done'?'✅':''}</div>
     <div class="tr-desc">${esc(d.desc)}</div>`;
   if(tr.length){
-    h += `<div class="tr-chips">${tr.map(r=>`<span class="tr-chip g">✅ ${km1(r.km)} กม. @ ${TR.fmtPace(r.sec/r.km)}/กม.${r.hr?` • HR ${r.hr}`:''}</span>`).join('')}</div>`;
+    h += `<div class="tr-chips">${tr.map(r=>`<span class="tr-chip g">✅ ${km1(r.km)} กม. @ ${TR.fmtPace(rpace(r))}/กม.${isMixed(r)?' (ช่วงวิ่ง)':''}${r.hr?` • HR ${r.hr}`:''}</span>`).join('')}</div>`;
   }
   const isRun = ['easy','long','quality','race'].includes(d.t) || (d.t==='hyrox' && d.km>0);
   h += `<div class="tr-row">`;
@@ -5637,6 +5653,14 @@ function renderCoach(runs, D){
       else if(pct>0.72) ins.push(['🟡',`วิ่งเบา HR เฉลี่ย ${Math.round(avgHr)} (${Math.round(pct*100)}% HRmax) ค่อนข้างสูงนิดหน่อย ถ้าพูดเป็นประโยคไม่ได้ ให้ชะลอ`]);
       else ins.push(['✅',`วิ่งเบา HR เฉลี่ย ${Math.round(avgHr)} (${Math.round(pct*100)}% HRmax) อยู่ในโซนเบาที่ถูกต้อง`]);
     }
+    // run/walk share
+    const mxr=runs.filter(r=>isMixed(r));
+    if(mxr.length>=4){
+      const sh=r=>r.runKm/r.km*100, f=mxr.slice(0,Math.ceil(mxr.length/2)), l=mxr.slice(-Math.ceil(mxr.length/2));
+      const a=f.reduce((s,r)=>s+sh(r),0)/f.length, b=l.reduce((s,r)=>s+sh(r),0)/l.length;
+      if(b-a>=4) ins.push(['📈',`สัดส่วนที่วิ่ง เพิ่มจาก ~${Math.round(a)}% เป็น ~${Math.round(b)}% ของระยะรวม — กำลังวิ่งต่อเนื่องได้มากขึ้น ไปถูกทางแล้ว`]);
+      else ins.push(['ℹ️',`วิ่งสลับเดินมาแล้ว ${mxr.length} ครั้ง สัดส่วนที่วิ่งอยู่ที่ ~${Math.round(b)}% ลองยืดช่วงวิ่งทีละนิด (เช่น +100-200 ม. ต่อรอบ) หรือลดเวลาเดินลงทีละสัปดาห์`]);
+    }
     // efficiency trend
     const eff=runs.filter(r=>r.hr && r.km>=2).slice(-12);
     if(eff.length>=6){
@@ -5700,20 +5724,29 @@ function renderProgress(runs){
     const thisMon=TR.monday(todayISO()), pp=[], ee=[];
     for(let i=-9;i<=0;i++){
       const m=TR.addDays(thisMon,i*7), e=TR.addDays(m,6), rr=runs.filter(r=>r.date>=m&&r.date<=e&&r.km>=1.5);
-      if(rr.length){ const km=rr.reduce((a,r)=>a+r.km,0), sec=rr.reduce((a,r)=>a+r.sec,0); const d=TR.parse(m); pp.push({y:sec/km,l:d.getDate()+'/'+(d.getMonth()+1)}); }
+      if(rr.length){ const km=rr.reduce((a,r)=>a+(r.runKm>0?r.runKm:r.km),0), sec=rr.reduce((a,r)=>a+(r.runKm>0?r.runSec:r.sec),0); const d=TR.parse(m); pp.push({y:sec/km,l:d.getDate()+'/'+(d.getMonth()+1)}); }
     }
-    h+=`<div class="tr-sub">pace เฉลี่ยรายสัปดาห์ (ยิ่งสูงบนกราฟ = ยิ่งเร็ว)</div>${chartLine(pp,v=>TR.fmtPace(v),true,'#EC8FB4')}`;
+    h+=`<div class="tr-sub">pace เฉลี่ยรายสัปดาห์ (ถ้าวิ่งสลับเดิน ใช้ pace เฉพาะช่วงวิ่ง • ยิ่งสูง = ยิ่งเร็ว)</div>${chartLine(pp,v=>TR.fmtPace(v),true,'#EC8FB4')}`;
     runs.filter(r=>r.hr && r.km>=2).slice(-12).forEach(r=>{ const d=TR.parse(r.date); ee.push({y:(r.km*1000/(r.sec/60))/r.hr, l:d.getDate()+'/'+(d.getMonth()+1)}); });
     h+=`<div class="tr-sub">ประสิทธิภาพหัวใจ (เมตรต่อหัวใจเต้น 1 ครั้ง — ยิ่งสูงยิ่งดี)</div>${chartLine(ee,v=>v.toFixed(2),false,'#5FB98A')}
       <div class="tr-hint">ถ้า pace เท่าเดิมแต่ HR ต่ำลง กราฟนี้จะขึ้น = ฟิตขึ้นจริง (วัดผลได้แม้ pace ยังไม่ขยับ)</div>`;
+    const mx=runs.filter(r=>isMixed(r)).slice(-12);
+    if(mx.length>=2){
+      h+=`<div class="tr-sub">สัดส่วนระยะที่วิ่ง (เทียบกับเดิน)</div>${chartLine(mx.map(r=>{ const d=TR.parse(r.date); return {y:r.runKm/r.km*100, l:d.getDate()+'/'+(d.getMonth()+1)}; }),v=>Math.round(v)+'%',false,'#8B6FD1')}
+      <div class="tr-hint">ถ้าเส้นนี้ค่อยๆ ขึ้น = วิ่งได้มากขึ้น เดินน้อยลง นี่คือความก้าวหน้าหลักของคนที่กำลังเริ่มวิ่งต่อเนื่อง</div>`;
+    }
     // PRs
     const pr=[];
     [[1,'1 กม.'],[3,'3 กม.'],[5,'5 กม.'],[10,'10 กม.']].forEach(a=>{
-      const c=runs.filter(r=>r.km>=a[0]); if(!c.length) return;
+      const c=runs.filter(r=>r.km>=a[0] && !isMixed(r)); if(!c.length) return;
       const b=c.reduce((x,r)=>(r.sec/r.km<x.sec/x.km)?r:x);
       pr.push([`pace ดีสุด (วิ่ง ≥ ${a[1]})`, TR.fmtPace(b.sec/b.km)+'/กม.', b.date]);
     });
-    const lg=runs.reduce((x,r)=>r.km>x.km?r:x); pr.push(['วิ่งไกลสุด', km1(lg.km)+' กม.', lg.date]);
+    const lg=runs.reduce((x,r)=>r.km>x.km?r:x); pr.push(['ระยะรวมไกลสุด (วิ่ง+เดิน)', km1(lg.km)+' กม.', lg.date]);
+    let cr=null; runs.forEach(r=>{ const m=isMixed(r)||r.runKm>0 ? (r.maxRunKm||0) : r.km; if(m>0 && (!cr||m>cr[0])) cr=[m,r.date]; });
+    if(cr) pr.push(['วิ่งต่อเนื่องไกลสุด', km1(cr[0])+' กม.', cr[1]]);
+    let bs=null; runs.forEach(r=>(r.segs||[]).forEach(s=>{ if(s.t==='r' && s.km>=0.9 && s.sec>0){ const p=s.sec/s.km; if(!bs||p<bs[0]) bs=[p,r.date]; } }));
+    if(bs) pr.push(['pace ช่วงวิ่งเร็วสุด (≥0.9 กม.)', TR.fmtPace(bs[0])+'/กม.', bs[1]]);
     let bw=null; const mons={}; runs.forEach(r=>{ const m=TR.monday(r.date); mons[m]=(mons[m]||0)+r.km; });
     Object.keys(mons).forEach(m=>{ if(!bw||mons[m]>bw[1]) bw=[m,mons[m]]; }); if(bw) pr.push(['สัปดาห์ที่วิ่งมากสุด', km1(bw[1])+' กม.', bw[0]]);
     h+=`<div class="tr-sub">สถิติส่วนตัว</div><div class="tr-pr">${pr.map(p=>`<div><div class="l">${esc(p[0])}</div><div class="v">${esc(p[1])}</div><div class="l">${TR.dateTh(p[2])}</div></div>`).join('')}</div>`;
@@ -5827,7 +5860,7 @@ function renderGoals(){
 function renderRunList(runs){
   const el=$('trRunList'); if(!el) return;
   const last=runs.slice().reverse().slice(0,10);
-  el.innerHTML = last.length ? last.map(r=>`<div class="tr-run"><div><div class="a">${km1(r.km)} กม. • ${TR.fmtTime(r.sec)} • ${TR.fmtPace(r.sec/r.km)}/กม.</div>
+  el.innerHTML = last.length ? last.map(r=>`<div class="tr-run"><div><div class="a">${km1(r.km)} กม. • ${TR.fmtTime(r.sec)} • ${isMixed(r)?`วิ่ง ${km1(r.runKm)} กม. @ ${TR.fmtPace(rpace(r))}/กม. • เดิน ${km1(r.walkKm)} กม.`:`${TR.fmtPace(r.sec/r.km)}/กม.`}</div>
     <div class="b">${TR.dateTh(r.date)} • ${KIND_TH[r.kind]||''} • ${r.surface==='outdoor'?'ข้างนอก':'ลู่'}${r.incline?` ชัน ${r.incline}%`:''}${r.hr?` • HR ${r.hr}`:''}${r.rpe?` • RPE ${r.rpe}`:''}${r.kcal?` • ${r.kcal} kcal`:''}${r.note?` • ${esc(r.note)}`:''}</div></div>
     <button class="tr-x" onclick="TR.delEntry('${r.date}',${r.idx})" aria-label="ลบ">✕</button></div>`).join('') : '<div class="tr-hint">ยังไม่มีบันทึกการวิ่ง</div>';
 }
@@ -5837,7 +5870,7 @@ TR.renderTodayTab = function(){
   const el=$('todayTrainCard'); if(!el||!S.goals) return;
   const runs=allRuns(), t=todayISO(), pd=planDay(t), RB=runsByDate(runs), tr=RB[t]||[], race=primaryRace();
   let h='<div class="tr-kicker">เทรนวันนี้</div>';
-  if(tr.length) h+=`<div class="tr-title">✅ วิ่งแล้ว ${km1(tr.reduce((a,r)=>a+r.km,0))} กม.</div><div class="tr-desc">${tr.map(r=>`${TR.fmtPace(r.sec/r.km)}/กม.${r.hr?` • HR ${r.hr}`:''}`).join(' • ')}</div>`;
+  if(tr.length) h+=`<div class="tr-title">✅ วิ่งแล้ว ${km1(tr.reduce((a,r)=>a+r.km,0))} กม.</div><div class="tr-desc">${tr.map(r=>`${TR.fmtPace(rpace(r))}/กม.${isMixed(r)?' (ช่วงวิ่ง)':''}${r.hr?` • HR ${r.hr}`:''}`).join(' • ')}</div>`;
   else if(pd) h+=`<div class="tr-title">${T_ICON[pd.day.t]||''} ${esc(pd.day.title)}${pd.day.km?` • ${km1(pd.day.km)} กม.`:''}</div><div class="tr-desc">${esc(pd.day.desc.length>140?pd.day.desc.slice(0,140)+'…':pd.day.desc)}</div>`;
   else h+=`<div class="tr-title">ยังไม่มีแผน</div>`;
   if(race) h+=`<div class="tr-chips"><span class="tr-chip p">🏁 ${esc(race.name)} อีก ${TR.diffDays(t,race.date)} วัน</span>${pd?`<span class="tr-chip">${km1(weekKm(pd.week.start,runs))}/${km1(pd.week.km)} กม. สัปดาห์นี้</span>`:''}</div>`;
@@ -5848,7 +5881,7 @@ TR.mascotLine = function(){
   if(!S.goals) return null;
   const runs=allRuns(), t=todayISO(), tr=runs.filter(r=>r.date===t);
   if(tr.length){ const km=tr.reduce((a,r)=>a+r.km,0), sec=tr.reduce((a,r)=>a+r.sec,0);
-    return {done:true, msg:`วิ่งแล้ว ${km1(km)} กม.!`, sub:`pace ${TR.fmtPace(sec/km)}/กม.${tr[0].hr?` • HR ${tr[0].hr}`:''}`}; }
+    return {done:true, msg:`วิ่งแล้ว ${km1(km)} กม.!`, sub:`pace ${TR.fmtPace(rpace(tr[0]))}/กม.${tr[0].hr?` • HR ${tr[0].hr}`:''}`}; }
   const pd=planDay(t); if(!pd) return null;
   if(pd.day.t==='rest') return {done:false, msg:'วันนี้วันพัก', sub:'พักให้เต็มที่ พรุ่งนี้ค่อยลุย'};
   return {done:false, msg:'วันนี้มีเทรน!', sub:`${pd.day.title}${pd.day.km?' '+km1(pd.day.km)+' กม.':''}`};
@@ -5876,7 +5909,7 @@ TR.onRunInput = function(){
   const km=parseFloat(val('trRunKm')), sec=TR.parseTime(val('trRunTime')), live=$('trRunLive'); if(!live) return;
   if(km>0 && sec>0){
     const kg=(typeof dayData!=='undefined'&&dayData.weight)||54.5, inc=val('trRunSurface')==='treadmill'?(parseFloat(val('trRunIncline'))||0):0;
-    live.textContent=`pace ${TR.fmtPace(sec/km)}/กม. • ความเร็ว ${(km/(sec/3600)).toFixed(1)} กม./ชม. • ประมาณ ${TR.runKcal(km,sec,kg,inc)} kcal`;
+    live.textContent=`${(function(){ let rk=0,rs=0; S.segs.forEach(s=>{ const t=TR.parseTime(s.tt||''); if(s.t==='r'&&s.km>0&&t>0){ rk+=s.km; rs+=t; } }); return rk>0?`pace ช่วงวิ่ง ${TR.fmtPace(rs/rk)}/กม. • เฉลี่ยรวม `:'pace '; })()}${TR.fmtPace(sec/km)}/กม. • ความเร็ว ${(km/(sec/3600)).toFixed(1)} กม./ชม. • ประมาณ ${TR.runKcal(km,sec,kg,inc)} kcal`;
   } else live.textContent='ใส่ระยะและเวลา เพื่อดู pace อัตโนมัติ';
 };
 TR.prefillFromPlan = function(){
@@ -5914,6 +5947,31 @@ TR.delEntry = async function(date, idx){
   }
   TR.refresh();
 };
+S.segs=[];
+function segRender(){
+  const el=$('trSegs'); if(!el) return;
+  el.innerHTML=S.segs.map((s,i)=>`<div class="tr-seg ${s.t}"><span class="sb">${s.t==='r'?'วิ่ง':'เดิน'}</span>
+    <input type="number" step="0.01" inputmode="decimal" placeholder="กม." value="${s.km||''}" oninput="TR.segEdit(${i},'km',this.value)">
+    <input type="text" inputmode="numeric" placeholder="นาที:วินาที" value="${s.tt||''}" oninput="TR.segEdit(${i},'tt',this.value)">
+    <span class="sp" id="trSegP${i}"></span><button class="tr-x" onclick="TR.delSeg(${i})" aria-label="ลบ">✕</button></div>`).join('');
+  S.segs.forEach((s,i)=>segPace(i));
+}
+function segPace(i){ const s=S.segs[i], e=$('trSegP'+i); if(!e||!s) return; const sec=TR.parseTime(s.tt||''); e.textContent=(s.km>0&&sec>0)?TR.fmtPace(sec/s.km)+'/กม.':''; }
+function segSum(){
+  let km=0,sec=0; S.segs.forEach(s=>{ const t=TR.parseTime(s.tt||''); if(s.km>0&&t>0){ km+=s.km; sec+=t; } });
+  if(S.segs.length){ const a=$('trRunKm'), b=$('trRunTime'); if(a) a.value=km?Math.round(km*100)/100:''; if(b) b.value=sec?TR.fmtTime(sec):''; }
+  TR.onRunInput();
+}
+TR.addSeg=function(t){ const last=S.segs[S.segs.length-1]; S.segs.push({t,km:'',tt:''}); segRender(); };
+TR.delSeg=function(i){ S.segs.splice(i,1); segRender(); if(S.segs.length) segSum(); else { ['trRunKm','trRunTime'].forEach(id=>{ const e=$(id); if(e) e.value=''; }); TR.onRunInput(); } };
+TR.clearSegs=function(){ S.segs=[]; segRender(); ['trRunKm','trRunTime'].forEach(id=>{ const e=$(id); if(e) e.value=''; }); TR.onRunInput(); };
+TR.segEdit=function(i,f,v){ const s=S.segs[i]; if(!s) return; if(f==='km') s.km=parseFloat(v)||0; else s.tt=v; segPace(i); segSum(); };
+TR.repeatLast=function(){
+  const n=S.segs.length; if(!n){ toast('เพิ่มช่วงวิ่งหรือช่วงเดินก่อนค่ะ'); return; }
+  const a=S.segs[n-1], b=n>1?S.segs[n-2]:null;
+  if(b && b.t!==a.t){ S.segs.push(Object.assign({},b),Object.assign({},a)); } else S.segs.push(Object.assign({},a));
+  segRender(); segSum();
+};
 TR.addRun = async function(){
   const date=val('trRunDate')||todayISO(), km=parseFloat(val('trRunKm')), sec=TR.parseTime(val('trRunTime'));
   if(!(km>0) || !(sec>0)){ toast('กรอกระยะ (กม.) และเวลา เช่น 32:15 ด้วยค่ะ'); return; }
@@ -5922,10 +5980,15 @@ TR.addRun = async function(){
   const kg=(typeof dayData!=='undefined'&&dayData.weight)||54.5;
   let kcal=parseFloat(val('trRunKcal')), est=false; if(!(kcal>0)){ kcal=TR.runKcal(km,sec,kg,inc); est=true; }
   const entry={name:'วิ่ง', minutes:Math.round(sec/60*10)/10, kcal, run:{km, sec, hr, incline:inc, rpe, kind:val('trRunKind')||'easy', surface, note:val('trRunNote')}};
+  const sg=S.segs.map(s=>({t:s.t,km:s.km,sec:TR.parseTime(s.tt||'')})).filter(s=>s.km>0&&s.sec>0);
+  if(sg.length){
+    const R=sg.filter(s=>s.t==='r'), W=sg.filter(s=>s.t==='w'), sm=(a,k)=>a.reduce((x,s)=>x+s[k],0);
+    Object.assign(entry.run,{segs:sg, runKm:Math.round(sm(R,'km')*100)/100, runSec:sm(R,'sec'), walkKm:Math.round(sm(W,'km')*100)/100, walkSec:sm(W,'sec'), maxRunKm:R.reduce((m,s)=>Math.max(m,s.km),0)});
+  }
   if(est) entry.est=true;
   await TR.pushExercise(date, entry);
   ['trRunKm','trRunTime','trRunHr','trRunIncline','trRunKcal','trRunNote'].forEach(id=>{ const e=$(id); if(e) e.value=''; });
-  const rp=$('trRunRpe'); if(rp) rp.value='';
+  const rp=$('trRunRpe'); if(rp) rp.value=''; S.segs=[]; segRender();
   TR.onRunInput(); TR.refresh();
   toast(`บันทึกแล้ว: ${km1(km)} กม. @ ${TR.fmtPace(sec/km)}/กม.`);
 };
