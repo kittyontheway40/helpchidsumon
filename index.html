@@ -500,6 +500,12 @@
   .tr-seg .sb{font-size:11.5px;font-weight:600;text-align:center;padding:5px 0;border-radius:8px;}
   .tr-seg.r .sb{background:var(--green-soft);color:#2f7d56;} .tr-seg.w .sb{background:var(--pink-soft);color:#b04b78;}
   .tr-seg .sp{font-size:11px;color:var(--muted);text-align:right;}
+  .tr-check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--purple-dark);margin:10px 0 6px;}
+  .tr-check input{width:18px;height:18px;accent-color:var(--purple);}
+  .tr-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px;}
+  .tr-kpis > div{background:var(--purple-soft);border-radius:14px;padding:10px 12px;}
+  .tr-kpis .l{font-size:11px;color:var(--muted);} .tr-kpis .v{font-family:'Poppins';font-weight:700;font-size:19px;color:var(--purple-dark);margin:2px 0;}
+  .tr-kpis .kd{font-size:10.5px;color:var(--muted);} .tr-kpis .kd.up{color:#2f7d56;} .tr-kpis .kd.dn{color:#b04b78;}
 </style>
 </head>
 <body>
@@ -519,6 +525,7 @@
   <div class="view active" id="view-train">
 
     <div class="tr-card tr-hero" id="trHero"></div>
+    <div class="tr-card" id="trKpi"></div>
     <div class="tr-card" id="trToday"></div>
     <div class="tr-card" id="trWeek"></div>
 
@@ -530,49 +537,46 @@
     <div class="section tr-sec" data-key="runlog">
       <div class="section-title"><h2>🏃‍♀️ บันทึกการวิ่ง</h2></div>
       <div>
-        <div class="tr-hint">กรอกจากหน้าสรุปของ Huawei Health: ระยะ • Duration • Avg heart rate • <b>Total calories</b> (ไม่ใช่ Active) — ไม่ต้องกรอกทุกช่อง ต้องมีแค่ระยะกับเวลา • ถ้าวิ่งสลับเดิน ใช้ส่วน "วิ่งสลับเดิน" ด้านล่างเพื่อแยก pace ช่วงวิ่ง</div>
-        <div class="tr-grid2">
-          <label>วันที่<input type="date" id="trRunDate"></label>
-          <label>สถานที่
-            <select id="trRunSurface" onchange="TR.onSurface()">
-              <option value="treadmill">ลู่วิ่ง (ฟิตเนส)</option>
-              <option value="outdoor">วิ่งสวน/ข้างนอก</option>
-            </select>
-          </label>
-          <label>ระยะ (กม.)<input type="number" id="trRunKm" step="0.01" inputmode="decimal" placeholder="เช่น 5.2" oninput="TR.onRunInput()"></label>
-          <label>เวลา (นาที:วินาที)<input type="text" id="trRunTime" inputmode="numeric" placeholder="เช่น 32:15 หรือ 1:05:20" oninput="TR.onRunInput()"></label>
-          <label>HR เฉลี่ย (ไม่บังคับ)<input type="number" id="trRunHr" inputmode="numeric" placeholder="bpm"></label>
-          <label id="trRunInclineWrap">ความชันลู่ % (ไม่บังคับ)<input type="number" id="trRunIncline" step="0.5" inputmode="decimal" placeholder="0" oninput="TR.onRunInput()"></label>
-          <label>ประเภทการซ้อม
-            <select id="trRunKind">
-              <option value="easy">วิ่งเบา (Easy)</option>
-              <option value="long">วิ่งยาว (Long)</option>
-              <option value="tempo">Tempo / เร็ว</option>
-              <option value="interval">Interval</option>
-              <option value="race">งานแข่ง / Time trial</option>
-              <option value="recovery">วิ่งฟื้นตัว</option>
-            </select>
-          </label>
-          <label>ความเหนื่อย RPE (1-10)
-            <select id="trRunRpe">
-              <option value="">–</option>
-              <option value="2">2 เบามาก</option><option value="3">3</option><option value="4">4 สบาย</option>
-              <option value="5">5</option><option value="6">6 พูดเป็นประโยคได้</option><option value="7">7 เริ่มหนัก</option>
-              <option value="8">8 หนัก</option><option value="9">9 หนักมาก</option><option value="10">10 สุดแรง</option>
-            </select>
-          </label>
-          <label>แคลที่เผา (ปล่อยว่างได้)<input type="number" id="trRunKcal" inputmode="decimal" placeholder="Total จากนาฬิกา"></label>
-          <label>บันทึกเพิ่มเติม<input type="text" id="trRunNote" placeholder="เช่น ขาหนัก / อากาศร้อน"></label>
+        <div class="tr-hint">กรอกแค่ 3 อย่างก็พอ: <b>ระยะ • เวลา • HR เฉลี่ย</b> จากหน้าสรุปใน Huawei Health</div>
+        <div class="tr-grid3">
+          <label>ระยะ (กม.)<input type="number" id="trRunKm" step="0.01" inputmode="decimal" placeholder="5.2" oninput="TR.onRunInput()"></label>
+          <label>เวลา (นาที:วินาที)<input type="text" id="trRunTime" inputmode="numeric" placeholder="32:15" oninput="TR.onRunInput()"></label>
+          <label>HR เฉลี่ย<input type="number" id="trRunHr" inputmode="numeric" placeholder="bpm"></label>
         </div>
-        <div class="tr-sub" style="margin-top:12px">วิ่งสลับเดิน? แยกเป็นช่วงได้ <span style="font-weight:400;color:var(--muted)">(ดูจาก lap ต่อกม. ในนาฬิกา)</span></div>
-        <div class="tr-hint">กด "+ ช่วงวิ่ง" / "+ ช่วงเดิน" ใส่ระยะและเวลาแต่ละช่วง แอปจะรวมระยะ/เวลาทั้งหมดให้เอง และแยก pace ช่วงวิ่งจริงกับช่วงเดินให้ (ถ้าใส่ช่วง ไม่ต้องกรอกระยะ/เวลารวมด้านบน)</div>
-        <div id="trSegs"></div>
-        <div class="tr-row" style="margin-top:6px">
-          <button class="tr-btn ghost small" onclick="TR.addSeg('r')">+ ช่วงวิ่ง</button>
-          <button class="tr-btn ghost small" onclick="TR.addSeg('w')">+ ช่วงเดิน</button>
-          <button class="tr-btn ghost small" onclick="TR.repeatLast()">↻ ทำซ้ำคู่ล่าสุด</button>
-          <button class="tr-btn ghost small" onclick="TR.clearSegs()">ล้างช่วง</button>
+        <label class="tr-check"><input type="checkbox" id="trRunMixed" onchange="TR.onMixed()"> วิ่งสลับเดิน (แยก pace ช่วงวิ่งให้)</label>
+        <div id="trMixedBox" style="display:none">
+          <div class="tr-grid3">
+            <label>ระยะที่วิ่งจริง (กม.)<input type="number" id="trRunRK" step="0.01" inputmode="decimal" placeholder="รวมทุกช่วงวิ่ง" oninput="TR.onRunInput()"></label>
+            <label>เวลาที่วิ่งจริง<input type="text" id="trRunRT" inputmode="numeric" placeholder="รวมทุกช่วงวิ่ง" oninput="TR.onRunInput()"></label>
+            <label>วิ่งต่อเนื่องนานสุด (กม.)<input type="number" id="trRunMax" step="0.01" inputmode="decimal" placeholder="ช่วงที่ยาวสุด"></label>
+          </div>
+          <div class="tr-hint" style="margin-top:6px">ดูจาก lap ในนาฬิกา: รวมระยะ/เวลาเฉพาะช่วงที่วิ่ง ส่วนที่เหลือแอปนับเป็นช่วงเดิน</div>
         </div>
+        <details class="tr-more"><summary>รายละเอียดเพิ่มเติม (ไม่จำเป็น)</summary>
+          <div class="tr-grid2" style="margin-top:6px">
+            <label>วันที่<input type="date" id="trRunDate"></label>
+            <label>สถานที่
+              <select id="trRunSurface" onchange="TR.onSurface()"><option value="treadmill">ลู่วิ่ง</option><option value="outdoor">ข้างนอก</option></select>
+            </label>
+            <label id="trRunInclineWrap">ความชันลู่ %<input type="number" id="trRunIncline" step="0.5" inputmode="decimal" placeholder="0" oninput="TR.onRunInput()"></label>
+            <label>ประเภทการซ้อม
+              <select id="trRunKind"><option value="">อัตโนมัติ (ตามแผน)</option><option value="easy">วิ่งเบา</option><option value="long">วิ่งยาว</option><option value="tempo">Tempo / เร็ว</option><option value="interval">Interval</option><option value="race">แข่ง / Time trial</option><option value="recovery">ฟื้นตัว</option></select>
+            </label>
+            <label>ความเหนื่อย (1-10)
+              <select id="trRunRpe"><option value="">–</option><option value="3">3</option><option value="4">4 สบาย</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8 หนัก</option><option value="9">9</option><option value="10">10</option></select>
+            </label>
+            <label>แคลที่เผา (ว่าง = คำนวณให้)<input type="number" id="trRunKcal" inputmode="decimal" placeholder="Total จากนาฬิกา"></label>
+            <label style="grid-column:1/-1">บันทึก<input type="text" id="trRunNote" placeholder="เช่น ขาหนัก / อากาศร้อน"></label>
+          </div>
+          <div class="tr-sub" style="margin-top:10px">ใส่ทีละช่วง (ละเอียดกว่า)</div>
+          <div id="trSegs"></div>
+          <div class="tr-row" style="margin-top:6px">
+            <button class="tr-btn ghost small" onclick="TR.addSeg('r')">+ ช่วงวิ่ง</button>
+            <button class="tr-btn ghost small" onclick="TR.addSeg('w')">+ ช่วงเดิน</button>
+            <button class="tr-btn ghost small" onclick="TR.repeatLast()">↻ ทำซ้ำคู่ล่าสุด</button>
+            <button class="tr-btn ghost small" onclick="TR.clearSegs()">ล้างช่วง</button>
+          </div>
+        </details>
         <div class="tr-live" id="trRunLive">ใส่ระยะและเวลา เพื่อดู pace อัตโนมัติ</div>
         <div class="tr-row">
           <button class="tr-btn" onclick="TR.addRun()">+ บันทึกการวิ่ง</button>
@@ -5569,6 +5573,23 @@ function renderHero(runs){
   el.innerHTML=h;
 }
 
+// ---------- KPI: run longer + faster ----------
+function renderKpi(runs){
+  const el=$('trKpi'); if(!el) return;
+  const t=todayISO(), c1=TR.addDays(t,-28), c0=TR.addDays(t,-56);
+  const cont=r=> r.runKm>0 ? (r.maxRunKm||0) : r.km;
+  const best=a=>a.reduce((m,r)=>Math.max(m,cont(r)),0);
+  const cur=runs.filter(r=>r.date>c1), prev=runs.filter(r=>r.date>c0&&r.date<=c1);
+  const paceOf=a=>{ let k=0,s=0; a.forEach(r=>{ if(r.runKm>0){k+=r.runKm;s+=r.runSec;} else {k+=r.km;s+=r.sec;} }); return k>0?s/k:null; };
+  const bc=best(cur), bp=best(prev), pc=paceOf(cur), pp=paceOf(prev);
+  const dl = (bp>0&&bc>0) ? (bc-bp) : null, dp = (pc&&pp) ? (pp-pc) : null;   // positive = better
+  const tag=(v,fmt)=> v==null?'<span class="kd">ยังไม่มีข้อมูลเทียบ</span>':`<span class="kd ${v>=0?'up':'dn'}">${v>=0?'▲':'▼'} ${fmt(Math.abs(v))} จาก 4 สัปดาห์ก่อน</span>`;
+  el.innerHTML=`<div class="tr-kicker">เป้าหมายของฉัน • เทียบ 4 สัปดาห์ล่าสุดกับ 4 สัปดาห์ก่อนหน้า</div>
+    <div class="tr-kpis">
+      <div><div class="l">วิ่งต่อเนื่องนานสุด</div><div class="v">${bc>0?km1(bc)+' กม.':'–'}</div>${tag(dl,x=>km1(x)+' กม.')}</div>
+      <div><div class="l">pace ช่วงวิ่ง</div><div class="v">${pc?TR.fmtPace(pc)+'/กม.':'–'}</div>${tag(dp,x=>Math.round(x)+' วิ/กม.')}</div>
+    </div>`;
+}
 // ---------- render: today ----------
 function renderToday(runs, D){
   const el=$('trToday'); if(!el) return;
@@ -5892,7 +5913,7 @@ TR.render = function(){
   if(!S.goals) return;
   buildGoalsStatic(); buildHyroxStatic();
   const D=days(), runs=allRuns(D);
-  renderHero(runs); renderToday(runs,D); renderWeek(runs,D); renderCoach(runs,D);
+  renderHero(runs); renderKpi(runs); renderToday(runs,D); renderWeek(runs,D); renderCoach(runs,D);
   renderRunList(runs); renderProgress(runs); renderZones(runs); renderHyrox(D); renderGoals();
   const ds=$('trRunDate'); if(ds && !ds.value) ds.value=todayISO();
   const hs=$('trHxDate'); if(hs && !hs.value) hs.value=todayISO();
@@ -5907,16 +5928,16 @@ TR.refresh = function(){
 TR.onSurface = function(){ const w=$('trRunInclineWrap'); if(w) w.style.display = val('trRunSurface')==='treadmill' ? '' : 'none'; };
 TR.onRunInput = function(){
   const km=parseFloat(val('trRunKm')), sec=TR.parseTime(val('trRunTime')), live=$('trRunLive'); if(!live) return;
+  const mrk=parseFloat(val('trRunRK')), mrs=TR.parseTime(val('trRunRT')); const mixedLive=(mrk>0&&mrs>0&&$('trRunMixed')&&$('trRunMixed').checked)?`pace ช่วงวิ่ง ${TR.fmtPace(mrs/mrk)}/กม. • `:'';
   if(km>0 && sec>0){
     const kg=(typeof dayData!=='undefined'&&dayData.weight)||54.5, inc=val('trRunSurface')==='treadmill'?(parseFloat(val('trRunIncline'))||0):0;
-    live.textContent=`${(function(){ let rk=0,rs=0; S.segs.forEach(s=>{ const t=TR.parseTime(s.tt||''); if(s.t==='r'&&s.km>0&&t>0){ rk+=s.km; rs+=t; } }); return rk>0?`pace ช่วงวิ่ง ${TR.fmtPace(rs/rk)}/กม. • เฉลี่ยรวม `:'pace '; })()}${TR.fmtPace(sec/km)}/กม. • ความเร็ว ${(km/(sec/3600)).toFixed(1)} กม./ชม. • ประมาณ ${TR.runKcal(km,sec,kg,inc)} kcal`;
+    live.textContent=`${mixedLive}${(function(){ let rk=0,rs=0; S.segs.forEach(s=>{ const t=TR.parseTime(s.tt||''); if(s.t==='r'&&s.km>0&&t>0){ rk+=s.km; rs+=t; } }); return rk>0?`pace ช่วงวิ่ง ${TR.fmtPace(rs/rk)}/กม. • เฉลี่ยรวม `:'pace '; })()}${TR.fmtPace(sec/km)}/กม. • ความเร็ว ${(km/(sec/3600)).toFixed(1)} กม./ชม. • ประมาณ ${TR.runKcal(km,sec,kg,inc)} kcal`;
   } else live.textContent='ใส่ระยะและเวลา เพื่อดู pace อัตโนมัติ';
 };
 TR.prefillFromPlan = function(){
   const pd=planDay(todayISO()); if(!pd){ toast('ยังไม่มีแผนวันนี้ค่ะ'); return; }
   const d=pd.day, map={easy:'easy',long:'long',quality:'tempo',race:'race',hyrox:'tempo'};
   if(d.km>0){ $('trRunKm').value=d.km; }
-  if(map[d.t]) $('trRunKind').value=map[d.t];
   $('trRunDate').value=todayISO(); TR.onRunInput();
 };
 TR.go = function(key, prefill){
@@ -5948,6 +5969,7 @@ TR.delEntry = async function(date, idx){
   TR.refresh();
 };
 S.segs=[];
+function autoKind(date){ const pd=planDay(date); const m={easy:'easy',long:'long',quality:'tempo',race:'race'}; return (pd&&m[pd.day.t])||'easy'; }
 function segRender(){
   const el=$('trSegs'); if(!el) return;
   el.innerHTML=S.segs.map((s,i)=>`<div class="tr-seg ${s.t}"><span class="sb">${s.t==='r'?'วิ่ง':'เดิน'}</span>
@@ -5972,6 +5994,7 @@ TR.repeatLast=function(){
   if(b && b.t!==a.t){ S.segs.push(Object.assign({},b),Object.assign({},a)); } else S.segs.push(Object.assign({},a));
   segRender(); segSum();
 };
+TR.onMixed=function(){ const c=$('trRunMixed'), b=$('trMixedBox'); if(b&&c) b.style.display=c.checked?'':'none'; TR.onRunInput(); };
 TR.addRun = async function(){
   const date=val('trRunDate')||todayISO(), km=parseFloat(val('trRunKm')), sec=TR.parseTime(val('trRunTime'));
   if(!(km>0) || !(sec>0)){ toast('กรอกระยะ (กม.) และเวลา เช่น 32:15 ด้วยค่ะ'); return; }
@@ -5979,15 +6002,19 @@ TR.addRun = async function(){
   const hr=parseInt(val('trRunHr'))||null, rpe=parseInt(val('trRunRpe'))||null;
   const kg=(typeof dayData!=='undefined'&&dayData.weight)||54.5;
   let kcal=parseFloat(val('trRunKcal')), est=false; if(!(kcal>0)){ kcal=TR.runKcal(km,sec,kg,inc); est=true; }
-  const entry={name:'วิ่ง', minutes:Math.round(sec/60*10)/10, kcal, run:{km, sec, hr, incline:inc, rpe, kind:val('trRunKind')||'easy', surface, note:val('trRunNote')}};
+  const entry={name:'วิ่ง', minutes:Math.round(sec/60*10)/10, kcal, run:{km, sec, hr, incline:inc, rpe, kind:val('trRunKind')||autoKind(date), surface, note:val('trRunNote')}};
   const sg=S.segs.map(s=>({t:s.t,km:s.km,sec:TR.parseTime(s.tt||'')})).filter(s=>s.km>0&&s.sec>0);
   if(sg.length){
     const R=sg.filter(s=>s.t==='r'), W=sg.filter(s=>s.t==='w'), sm=(a,k)=>a.reduce((x,s)=>x+s[k],0);
     Object.assign(entry.run,{segs:sg, runKm:Math.round(sm(R,'km')*100)/100, runSec:sm(R,'sec'), walkKm:Math.round(sm(W,'km')*100)/100, walkSec:sm(W,'sec'), maxRunKm:R.reduce((m,s)=>Math.max(m,s.km),0)});
   }
+  const rk=parseFloat(val('trRunRK')), rs=TR.parseTime(val('trRunRT'));
+  if(!sg.length && $('trRunMixed') && $('trRunMixed').checked && rk>0 && rs>0){
+    Object.assign(entry.run,{runKm:Math.min(rk,km), runSec:Math.min(rs,sec), walkKm:Math.round(Math.max(0,km-rk)*100)/100, walkSec:Math.max(0,sec-rs), maxRunKm:parseFloat(val('trRunMax'))||null});
+  }
   if(est) entry.est=true;
   await TR.pushExercise(date, entry);
-  ['trRunKm','trRunTime','trRunHr','trRunIncline','trRunKcal','trRunNote'].forEach(id=>{ const e=$(id); if(e) e.value=''; });
+  ['trRunKm','trRunTime','trRunHr','trRunIncline','trRunKcal','trRunNote','trRunRK','trRunRT','trRunMax'].forEach(id=>{ const e=$(id); if(e) e.value=''; });
   const rp=$('trRunRpe'); if(rp) rp.value=''; S.segs=[]; segRender();
   TR.onRunInput(); TR.refresh();
   toast(`บันทึกแล้ว: ${km1(km)} กม. @ ${TR.fmtPace(sec/km)}/กม.`);
