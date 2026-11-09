@@ -5395,12 +5395,11 @@ TR.generatePlan = function(o){
 
     // roles for this week
     let hDone=false;
+    // running-only plan: strength / Hyrox / cross-training are NOT prescribed; the user logs them and the coach analyses them
+    const optDays=new Set();
     const roles = layout.map((r,i)=>{
-      if(hyrox){
-        if(r==='S' && !hDone){ hDone=true; return 'H'; }
-        if(r==='E+S') return 'E+H';
-        if(r==='E' && i===5 && runDays>=5) return 'C';
-      }
+      if(r==='S'){ optDays.add(i); return 'R'; }
+      if(r==='E+S') return 'E';
       return r;
     });
     // km distribution
@@ -5434,7 +5433,7 @@ TR.generatePlan = function(o){
         if(hyrox){ day.t='rest'; day.title='พักก่อนแข่ง'; day.desc='พัก เดินเบา 15 นาที เตรียมของ นอนให้พอ'; }
         else { day.t='easy'; day.title='Shake-out'; day.km=3; day.desc='วิ่งเบา 3 กม. + strides 4 × 20 วินาที เพื่อให้ขาสดและตื่นตัว แล้วพักเตรียมของ'; }
       } else if(role==='R'){
-        // rest, keep default
+        if(optDays.has(d)) day.desc='ไม่มีวิ่งในแผน — พัก หรือจะออกกำลังกายอื่น (เวท/คลาส/Hyrox) ก็ได้ตามสะดวก แค่บันทึกไว้ให้เทรนเนอร์วิเคราะห์ • ถ้าพรุ่งนี้มีวิ่งหนัก/วิ่งยาว หลีกเลี่ยงเวทขาหนัก';
       } else if(role==='E' || role==='E+S' || role==='E+H' || role==='C'){
         if(role==='C'){
           day.t='hyrox'; day.title='วิ่งสไตล์ Hyrox'; day.km=Ckm;
@@ -5761,6 +5760,32 @@ function renderCoach(runs, D){
       else if(ch<=-3) ins.push(['⚠️',`ประสิทธิภาพหัวใจลดลง ~${Math.round(-ch)}% เทียบกับช่วงก่อน — อาจเหนื่อยสะสม/นอนไม่พอ ลองลดความหนักสัก 2-3 วัน`]);
     }
   }
+  // other (non-running) training: logged by the user, analysed here
+  (function(){
+    const LEG=/ขา|squat|สควอต|ลันจ์|lunge|เดดลิฟ|deadlift|leg|bodypump|body pump|hyrox|sled|wall ?ball|เวท|weight|crossfit|hiit/i;
+    const other=[]; for(let i=0;i<7;i++){ const d=TR.addDays(t,-i), x=D[d]; if(x) (x.exercises||[]).forEach(e=>{ if(e && !e.run && e.minutes>0) other.push({date:d,name:e.name||'',min:e.minutes,leg:LEG.test(e.name||'')||!!e.hyrox}); }); }
+    if(other.length){
+      const min=other.reduce((a,e)=>a+e.min,0), runMin=runs.filter(r=>r.date>TR.addDays(t,-7)).reduce((a,r)=>a+r.sec/60,0);
+      const names=[...new Set(other.map(e=>e.name))].slice(0,4).join(', ');
+      ins.push(['🏋️',`ออกกำลังกายอื่นนอกจากวิ่ง 7 วันล่าสุด: ${other.length} ครั้ง รวม ${Math.round(min)} นาที (${esc(names)}) เทียบกับวิ่ง ${Math.round(runMin)} นาที`]);
+      if(runMin>0 && min>runMin*1.5) ins.push(['⚠️','เวลาออกกำลังกายอื่นมากกว่าเวลาวิ่งเกิน 1.5 เท่า ถ้าเป้าหลักคือวิ่งให้นานและเร็วขึ้น ลองเพิ่มเวลาวิ่งเบาก่อน ไม่ให้เวท/คลาสแย่งแรงจากการวิ่ง']);
+    }
+    // legs the day before a run vs. other runs
+    const after=[], other2=[];
+    runs.filter(r=>r.date>TR.addDays(t,-42)&&r.hr&&r.km>=2).forEach(r=>{
+      const prev=D[TR.addDays(r.date,-1)]; const leg=prev&&(prev.exercises||[]).some(e=>e&&!e.run&&e.minutes>=20&&(LEG.test(e.name||'')||e.hyrox));
+      const ef=(r.runKm>0?r.runKm*1000/(r.runSec/60):r.km*1000/(r.sec/60))/r.hr; (leg?after:other2).push(ef);
+    });
+    const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+    if(after.length>=2 && other2.length>=2){
+      const ch=(avg(after)/avg(other2)-1)*100;
+      if(ch<=-3) ins.push(['⚠️',`วันที่วิ่งหลังเล่นเวท/คลาสขาหนักเมื่อวาน ประสิทธิภาพหัวใจต่ำกว่าปกติ ~${Math.round(-ch)}% (จาก ${after.length} ครั้ง) — ลองย้ายวันเวทขาไปวันที่ไม่ได้วิ่งในวันถัดไป หรือวิ่งเบาหลังวันเวท`]);
+      else ins.push(['✅',`วิ่งหลังวันเวท/คลาสขา ประสิทธิภาพไม่ต่างจากปกติ (จาก ${after.length} ครั้ง) ตารางปัจจุบันใช้ได้`]);
+    }
+    // hard run planned tomorrow but legs trained today
+    const tmr=planDay(TR.addDays(t,1)); const todayLeg=((D[t]&&D[t].exercises)||[]).some(e=>e&&!e.run&&e.minutes>=20&&(LEG.test(e.name||'')||e.hyrox));
+    if(tmr && tmr.day && ['quality','long'].includes(tmr.day.t) && todayLeg) ins.push(['⚠️',`วันนี้ออกกำลังกายขาหนัก และพรุ่งนี้มี "${tmr.day.title}" ในแผน — กินโปรตีน นอนให้พอ และถ้าขายังล้า ให้วิ่งเบาแทนหรือเลื่อนไปวันถัดไป`]);
+  })();
   // rest days
   let trained=0; for(let i=0;i<7;i++){ const d=D[TR.addDays(t,-i)]; if(d && (d.exercises||[]).some(e=>e.minutes>=15)) trained++; }
   if(trained>=7) ins.push(['⚠️','ออกกำลังกายครบ 7 วันติดโดยไม่มีวันพักเลย — ร่างกายพัฒนาตอนพัก ลองเลือก 1 วันให้เป็นวันพักจริงๆ (เดินเบา/ยืดเหยียดได้)']);
@@ -5890,7 +5915,7 @@ function renderHyrox(D){
   const split = race && race.targetSec ? TR.hyroxSplit(race.targetSec) : null;
   let h='';
   if(race){ const dd=TR.diffDays(todayISO(),race.date); h+=`<div class="tr-chips" style="margin:0 0 8px"><span class="tr-chip p">🏁 ${esc(race.name)} • อีก ${dd} วัน (${TR.dateTh(race.date)})</span>${race.targetSec?`<span class="tr-chip">🎯 ${TR.fmtTime(race.targetSec)}</span>`:''}</div>`; }
-  else h+=`<div class="tr-hint">ยังไม่ได้ตั้งงาน Hyrox — เพิ่มได้ที่ "เป้าหมาย & ตั้งค่าแผน" แล้วแผนซ้อมจะมีวัน Hyrox (เทคนิค → Compromised run → Half sim) พร้อมเพิ่มน้ำหนัก sled ทีละขั้น</div>`;
+  else h+=`<div class="tr-hint">ยังไม่ได้ตั้งงาน Hyrox — เพิ่มได้ที่ "เป้าหมาย & ตั้งค่าแผน" แผนจะเป็นแผนวิ่งล้วน ส่วนเวท/ซ้อม Hyrox คุณบันทึกเองได้ แล้วเทรนเนอร์จะวิเคราะห์ผลต่อการวิ่งให้</div>`;
   h+=`<div class="tr-hint">ฟอร์แมต: วิ่ง 1 กม. + 1 สถานี ซ้ำ 8 รอบ (วิ่งรวม 8 กม.) • มาตรฐาน Women Open ตามกติกา 2025/26 — ตรวจกติกาของงานที่สมัครอีกครั้งก่อนแข่ง</div>
     <table class="tr-table"><tr><th>#</th><th>สถานี</th><th>มาตรฐาน</th><th class="r">${split?'เป้า':'PR'}</th></tr>
     ${TR.HYROX.map((s,i)=>`<tr><td>${i+1}</td><td>${s.n}</td><td>${s.std}</td><td class="r">${split?TR.fmtTime(split.stations[i].sec)+(stPR[s.k]?`<br><span style="color:var(--muted);font-size:10.5px">PR ${TR.fmtTime(stPR[s.k])}</span>`:''):(stPR[s.k]?TR.fmtTime(stPR[s.k]):'–')}</td></tr>`).join('')}</table>`;
