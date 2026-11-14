@@ -648,6 +648,7 @@
 
   <!-- HYROX VIEW -->
   <div class="view" id="view-hyrox">
+    <div class="backbar" onclick="switchTab('more')">← เพิ่มเติม</div>
     <div class="tr-card tr-hero" id="hxHead"></div>
     <div class="tr-card" id="hxReady"></div>
     <div class="section"><div class="section-title"><h2>🏋️‍♀️ สถานี & เป้าหมายรายสถานี</h2></div><div class="card" id="hxStations"></div></div>
@@ -661,6 +662,7 @@
   <!-- WEIGHT VIEW -->
   <div class="view" id="view-weight">
     <div class="tr-card tr-hero" id="wtGoal"></div>
+    <div class="tr-card" id="wtBody"></div>
     <div class="tr-card" id="wtInsights"></div>
     <div class="tr-card" id="wtEnergy"></div>
     <div class="section"><div class="section-title"><h2>📉 กราฟน้ำหนัก (เฉลี่ย 7 วัน)</h2></div><div class="card" id="wtChart"></div></div>
@@ -700,6 +702,7 @@
   <div class="view" id="view-more">
     <div class="section-title" style="margin-bottom:12px;"><h2>เพิ่มเติม</h2></div>
     <div class="more-grid">
+      <button type="button" onclick="switchTab('hyrox')"><b>🏋️ Hyrox (เล่นสนุก)</b><span>ครอสเทรน • บันทึกเวลาสถานี</span></button>
       <button type="button" onclick="switchTab('growth')"><b>🌱 เติบโต</b><span>เป้าหมายชีวิต & นิสัย</span></button>
       <button type="button" onclick="switchTab('calendar')"><b>📅 ปฏิทิน</b><span>รอบเดือน & ตารางสัปดาห์</span></button>
       <button type="button" onclick="switchTab('finance')"><b>💰 การเงิน</b><span>รายรับ-รายจ่าย</span></button>
@@ -1314,10 +1317,10 @@
 
 <div class="tabbar">
   <button class="tab-btn active" id="tabbtn-today" onclick="switchTab('today')">วันนี้</button>
-  <button class="tab-btn" id="tabbtn-train" onclick="switchTab('train')">วิ่ง</button>
-  <button class="tab-btn" id="tabbtn-hyrox" onclick="switchTab('hyrox')">Hyrox</button>
   <button class="tab-btn" id="tabbtn-weight" onclick="switchTab('weight')">น้ำหนัก</button>
+  <button class="tab-btn" id="tabbtn-train" onclick="switchTab('train')">วิ่ง</button>
   <button class="tab-btn" id="tabbtn-more" onclick="switchTab('more')">เพิ่มเติม</button>
+  <button class="tab-btn sub" id="tabbtn-hyrox" onclick="switchTab('hyrox')">Hyrox</button>
   <button class="tab-btn sub" id="tabbtn-growth" onclick="switchTab('growth')">เติบโต</button>
   <button class="tab-btn sub" id="tabbtn-calendar" onclick="switchTab('calendar')">ปฏิทิน</button>
   <button class="tab-btn sub" id="tabbtn-finance" onclick="switchTab('finance')">การเงิน</button>
@@ -6502,7 +6505,7 @@ const val=id=>{ const e=$(id); return e?String(e.value).trim():''; };
 const f1=x=>String(Math.round(x*10)/10), f2=x=>String(Math.round(x*100)/100);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const NW=window.NW={wg:null};
-const sub=['growth','calendar','finance','targets'];
+const sub=['growth','calendar','finance','targets','hyrox'];
 
 async function sget(k){ try{ const r=await window.storage.get(k,false); return r&&r.value?JSON.parse(r.value):null; }catch(e){ return null; } }
 async function sset(k,o){ try{ await window.storage.set(k,JSON.stringify(o),false); }catch(e){ toast('บันทึกไม่สำเร็จ'); } }
@@ -6533,6 +6536,13 @@ function curVdot(runs){
   const cut=TR.addDays(today(),-56); let b=0; runs.forEach(r=>{ if(r.date>=cut&&r.km>=2&&!(r.runKm>0&&r.walkKm>0.05)){ const v=TR.vdot(r.km,r.sec); if(v>b) b=v; } });
   return b?clamp(b*1.04,22,65):28;
 }
+const STR=/เวท|weight|squat|สควอต|deadlift|เดดลิฟ|ลันจ์|lunge|sled|farmer|wall ?ball|crossfit|bodypump|body pump|พุช|push.?up|ยางยืด|ฝึกแรง|strength|hiit|hyrox|ไฮร็อก|พิลาทิส|pilates/i;
+function isStrength(e){ return !!(e&&(e.hyrox||(!e.run&&e.minutes>=15&&STR.test(e.name||'')))); }
+function strCount(D,from,to){ let n=0; Object.keys(D).forEach(k=>{ if(k>=from&&k<=to) (D[k].exercises||[]).forEach(e=>{ if(isStrength(e)) n++; }); }); return n; }
+function exDays(D,from,to){ let n=0; Object.keys(D).forEach(k=>{ if(k>=from&&k<=to&&(D[k].exercises||[]).some(e=>e&&e.minutes>=15)) n++; }); return n; }
+NW.scans=[];
+function lastScans(){ return (NW.scans||[]).filter(s=>s.weight>0&&s.fatPct>0).sort((a,b)=>a.date<b.date?-1:1); }
+const fatKg=x=>x.weight*x.fatPct/100;
 function weekKm(mon,runs){ const e=TR.addDays(mon,6); return runs.filter(r=>r.date>=mon&&r.date<=e).reduce((s,r)=>s+r.km,0); }
 function hxRace(){ return (TR.S.goals&&TR.S.goals.races||[]).filter(r=>r.type==='hyrox'&&r.date>=today()).sort((a,b)=>a.date<b.date?-1:1)[0]||null; }
 
@@ -6553,6 +6563,13 @@ function wtChart(ser,goal){
   s+=`<text x="${pl}" y="${H-6}" font-size="8" fill="#8A8494">${a.getDate()}/${a.getMonth()+1}</text><text x="${W-pr}" y="${H-6}" font-size="8" text-anchor="end" fill="#8A8494">${b.getDate()}/${b.getMonth()+1}</text></svg>`;
   return s+'<div class="tr-hint">จุดจาง = น้ำหนักแต่ละวัน • เส้นม่วง = ค่าเฉลี่ย 7 วัน (ดูเส้นนี้ ไม่ต้องสนใจขึ้นลงรายวัน)</div>';
 }
+function sugHtml(){
+  const L=lastScans().slice(-1)[0]; if(!L) return '';
+  const lean=L.weight-fatKg(L), a=lean/0.72, b=lean/0.70;
+  return `<div class="tr-hint" style="margin-top:8px">💡 จากผลสแกน InBody ล่าสุด (กล้ามเนื้อและมวลที่ไม่ใช่ไขมันราว ${f1(lean)} กก.) น้ำหนัก <b>${f1(a)}–${f1(b)} กก.</b> จะได้ไขมันราว 28–30% ถ้ารักษากล้ามเนื้อไว้ได้ <button class="tr-btn ghost small" onclick="NW.useSug(${Math.round(b*2)/2})">ใช้ ${Math.round(b*2)/2} กก. เป็นเป้าแรก</button></div>`;
+}
+function fatAtTarget(t){ const L=lastScans().slice(-1)[0]; if(!L||!(t>0)) return ''; const lean=L.weight-fatKg(L); const p=(1-lean/t)*100; return p>0&&p<60?`<span class="tr-chip">ไขมัน ≈ ${f1(p)}% (ถ้ากล้ามเนื้อเท่าเดิม)</span>`:''; }
+NW.useSug=function(v){ const e=$('wgTarget'); if(e) e.value=v; };
 function renderWeight(){
   if(!$('wtGoal')) return;
   const D=days(), ser=wSeries(D), runs=runsOf(D), g=NW.wg||{}, t=today();
@@ -6567,6 +6584,7 @@ function renderWeight(){
       <label>ภายในวันที่ (ไม่บังคับ)<input type="date" id="wgDate"></label>
       <label>รอบเอวเป้าหมาย (นิ้ว ไม่บังคับ)<input type="number" id="wgWaist" step="0.5" inputmode="decimal"></label></div>
       <div class="tr-row"><button class="tr-btn" onclick="NW.saveGoal()">บันทึกเป้าหมาย</button></div>
+      ${sugHtml()}
       <div class="tr-hint" style="margin-top:6px">${last?`น้ำหนักล่าสุด ${f1(last.w)} กก. (${TR.dateTh(last.date)})`:'ยังไม่มีน้ำหนักที่บันทึก — กรอกในหน้า "วันนี้" ส่วนนอน & น้ำหนัก'}</div>`;
   } else {
     const start=g.startWeight||(ser[0]&&ser[0].w)||cur, total=start-g.target, done=cur!=null?start-cur:0, pct=total>0?clamp(done/total*100,0,100):0;
@@ -6574,7 +6592,7 @@ function renderWeight(){
     h=`<div class="tr-kicker">เป้าหมายลดน้ำหนัก</div>
       <div class="tr-big">${cur!=null?f1(cur):'–'} <span style="font-size:14px;font-weight:500;color:var(--muted)">กก. → เป้า ${f1(g.target)} กก.</span></div>
       <div class="tr-bar"><i style="width:${pct}%"></i></div>
-      <div class="tr-chips"><span class="tr-chip">เริ่ม ${f1(start)} กก.</span>${left!=null?`<span class="tr-chip ${left<=0?'g':'p'}">${left<=0?'ถึงเป้าแล้ว 🎉':'เหลืออีก '+f1(left)+' กก.'}</span>`:''}${g.date?`<span class="tr-chip">📅 ${TR.dateTh(g.date)}${dl!=null?` (อีก ${dl} วัน)`:''}</span>`:''}</div>
+      <div class="tr-chips"><span class="tr-chip">เริ่ม ${f1(start)} กก.</span>${left!=null?`<span class="tr-chip ${left<=0?'g':'p'}">${left<=0?'ถึงเป้าแล้ว 🎉':'เหลืออีก '+f1(left)+' กก.'}</span>`:''}${g.date?`<span class="tr-chip">📅 ${TR.dateTh(g.date)}${dl!=null?` (อีก ${dl} วัน)`:''}</span>`:''}${fatAtTarget(g.target)}</div>
       <div class="tr-row"><button class="tr-btn ghost small" onclick="NW.editGoal()">แก้เป้าหมาย</button></div>`;
   }
   $('wtGoal').innerHTML=h;
@@ -6596,11 +6614,11 @@ function renderWeight(){
   }
   // --- energy balance (last 14 days)
   const eDays=[]; for(let i=0;i<14;i++){ const d=D[TR.addDays(t,-i)]; const e=d&&energy(d); if(e) eDays.push(e); }
-  let eInfo='';
+  let eInfo=`<div class="tr-sub" style="margin-top:0">เป้ากินต่อวัน (ตั้งค่าไว้ในแอป)</div><table class="tr-table"><tr><td>พลังงาน</td><td class="r"><b>${targets.calMin}–${targets.calMax}</b> kcal</td></tr><tr><td>โปรตีน</td><td class="r"><b>${targets.proMin}–${targets.proMax}</b> กรัม</td></tr><tr><td>ไม่ควรต่ำกว่า BMR</td><td class="r"><b>${targets.bmr}</b> kcal</td></tr></table><div class="tr-hint">ขาดดุลเล็กน้อยแต่สม่ำเสมอดีกว่าอดหนักแล้วกินเกิน ดูค่าเฉลี่ยทั้งสัปดาห์ ไม่ต้องชดเชยวันที่กินเกิน</div>`;
   if(eDays.length>=5){
     const ad=eDays.reduce((s,e)=>s+e.deficit,0)/eDays.length, ai=eDays.reduce((s,e)=>s+e.intake,0)/eDays.length, ap=eDays.reduce((s,e)=>s+e.pro,0)/eDays.length;
     const exp=ad*7/7700;
-    eInfo=`<div class="tr-sub">แคลที่จด vs น้ำหนักจริง (14 วันล่าสุด • จดอาหาร ${eDays.length} วัน)</div>
+    eInfo+=`<div class="tr-sub">แคลที่จด vs น้ำหนักจริง (14 วันล่าสุด • จดอาหาร ${eDays.length} วัน)</div>
       <table class="tr-table"><tr><td>กินเฉลี่ย</td><td class="r"><b>${Math.round(ai)}</b> kcal/วัน</td></tr>
       <tr><td>ใช้พลังงานเฉลี่ย (TDEE + ออกกำลัง)</td><td class="r"><b>${Math.round(ai+ad)}</b> kcal/วัน</td></tr>
       <tr><td>ขาดดุลเฉลี่ย</td><td class="r"><b>${Math.round(ad)}</b> kcal/วัน</td></tr>
@@ -6618,6 +6636,8 @@ function renderWeight(){
     const pOk=eDays.filter(e=>e.pro>=targets.proMin).length;
     add(pOk/eDays.length>=0.7?'✅':'🥚',`โปรตีนเฉลี่ย ${Math.round(ap)} g/วัน • ถึงเป้า (${targets.proMin} g) ${pOk}/${eDays.length} วัน ${pOk/eDays.length>=0.7?'':'— โปรตีนช่วยรักษากล้ามเนื้อตอนลดน้ำหนักและซ้อมหนัก ลองเพิ่มในมื้อเช้าและหลังวิ่ง'}`);
   } else add('ℹ️',`จดอาหารแล้ว ${eDays.length}/14 วัน — จดให้ถึงอย่างน้อย 5 วัน แอปจะเทียบแคลกับน้ำหนักที่ลดจริงให้`);
+  { const wk0=TR.monday(t), sc=strCount(D,TR.addDays(t,-27),t);
+    add(sc>=8?'✅':'💪',`ฝึกแรง/ครอสเทรนที่บันทึกใน 4 สัปดาห์ล่าสุด ${sc} ครั้ง ${sc>=8?'— สม่ำเสมอดี ช่วยรักษากล้ามเนื้อขณะลดไขมัน':'— ลดน้ำหนักให้ได้ไขมัน ไม่ใช่กล้ามเนื้อ ควรฝึกแรงอย่างน้อย 2 ครั้ง/สัปดาห์ (30 นาทีก็พอ) แล้วบันทึกไว้'}`); }
   // --- cross-goal: weight vs running
   const eff=runs.filter(r=>r.hr&&r.km>=2).slice(-8);
   if(eff.length>=6 && rate!=null && -rate>=lo){
@@ -6631,7 +6651,40 @@ function renderWeight(){
   $('wtInsights').innerHTML=ins.join('');
   $('wtEnergy').innerHTML=eInfo;
   $('wtChart').innerHTML=wtChart(ser,g.target?g:null);
+  renderBody();
 }
+function renderBody(){
+  const el=$('wtBody'); if(!el) return; const sc=lastScans();
+  const imp=!sc.some(x=>x.date==='2026-11-14')?`<div class="tr-row"><button class="tr-btn ghost small" onclick="NW.importInbody()">นำเข้าผลสแกน InBody (14 พ.ย. 2026 และประวัติ 8 ครั้ง)</button></div>`:'';
+  if(!sc.length){ el.innerHTML=`<div class="tr-kicker">องค์ประกอบร่างกาย (InBody)</div><div class="tr-hint">ยังไม่มีผลสแกน — กรอกในส่วน "ผลสแกน InBody" ด้านล่าง เพื่อดูแนวโน้มมวลไขมันและกล้ามเนื้อ ซึ่งสำคัญกว่าตัวเลขบนตาชั่ง</div>${imp}`; return; }
+  const L=sc[sc.length-1], P=sc[sc.length-2], fm=fatKg(L), lean=L.weight-fm;
+  let ch='', note='';
+  if(P){ const dw=L.weight-P.weight, df=fm-fatKg(P), dm=(L.muscleKg&&P.muscleKg)?L.muscleKg-P.muscleKg:null;
+    const sg=x=>(x>0?'+':'')+f1(x);
+    ch=`<div class="tr-chips"><span class="tr-chip">เทียบ ${TR.dateTh(P.date)}</span><span class="tr-chip ${df<=0?'g':'p'}">ไขมัน ${sg(df)} กก.</span>${dm!=null?`<span class="tr-chip ${dm>=0?'g':'p'}">กล้ามเนื้อ ${sg(dm)} กก.</span>`:''}<span class="tr-chip">น้ำหนัก ${sg(dw)} กก.</span></div>`;
+    if(dw>0&&df<0.6&&(dm==null||dm>=0)) note='✅ น้ำหนักที่เพิ่มมาจากกล้ามเนื้อ/น้ำเป็นหลัก ไม่ใช่ไขมัน (ไขมันเปลี่ยนไม่ถึง 0.6 กก. ซึ่งอยู่ในช่วงคลาดเคลื่อนของเครื่อง)';
+    else if(df>=1) note='⚠️ มวลไขมันเพิ่ม '+f1(df)+' กก. จากการสแกนก่อนหน้า — ดูแคลเฉลี่ยและของหวาน/เครื่องดื่มที่จดไม่ครบ';
+    else if(df<=-0.6) note='✅ มวลไขมันลดลง '+f1(-df)+' กก. — ทิศทางที่ถูกต้อง';
+  }
+  const rows=sc.slice(-6).reverse().map(x=>`<tr><td>${TR.dateTh(x.date)} ${x.date.slice(2,4)}</td><td class="r">${f1(x.weight)}</td><td class="r">${f1(fatKg(x))}</td><td class="r">${f1(x.fatPct)}%</td><td class="r">${x.muscleKg?f1(x.muscleKg):'–'}</td></tr>`).join('');
+  const tg=p=>f1(lean/(1-p));
+  el.innerHTML=`<div class="tr-kicker">องค์ประกอบร่างกาย (InBody • ${TR.dateTh(L.date)})</div>
+    <div class="tr-big">${f1(fm)} <span style="font-size:14px;font-weight:500;color:var(--muted)">กก. ไขมัน (${f1(L.fatPct)}%)</span></div>
+    <div class="tr-chips"><span class="tr-chip">น้ำหนัก ${f1(L.weight)} กก.</span>${L.muscleKg?`<span class="tr-chip g">กล้ามเนื้อ ${f1(L.muscleKg)} กก.</span>`:''}</div>${ch}
+    ${note?`<div class="tr-ins"><span class="ic">${note.slice(0,2)}</span><span>${esc(note.slice(2).trim())}</span></div>`:''}
+    <table class="tr-table"><tr><th>วันที่</th><th class="r">น้ำหนัก</th><th class="r">ไขมัน กก.</th><th class="r">% ไขมัน</th><th class="r">กล้ามเนื้อ</th></tr>${rows}</table>
+    <div class="tr-hint" style="margin-top:6px">น้ำหนักที่ % ไขมันต่างๆ (ถ้ากล้ามเนื้อและมวลที่ไม่ใช่ไขมันเท่าเดิม): 30% → <b>${tg(0.30)}</b> • 28% → <b>${tg(0.28)}</b> • 26% → <b>${tg(0.26)}</b> กก.</div>
+    <div class="tr-hint">วัดซ้ำตอนเช้า หลังเข้าห้องน้ำ ก่อนกินอาหาร ห่างกัน 2–4 สัปดาห์ และเลี่ยงช่วงก่อนมีประจำเดือน ค่าจะเทียบกันได้มากกว่าวัดตอนเย็นหลังมื้อใหญ่ เครื่องคลาดเคลื่อนได้ราว ±0.5–1 กก.</div>${imp}`;
+}
+NW.importInbody=async function(){
+  const seed=[['2025-09-20',49.9,29.6,18.9],['2025-10-05',50.2,29.7,19.1],['2025-10-07',50.1,29.6,19.0],['2025-10-17',49.8,29.7,18.8],['2025-11-02',50.6,29.8,19.2],['2026-05-17',52.8,32.9,19.1],['2026-09-05',54.5,34.9,19.0],['2026-11-14',56.5,34.2,20.0]];
+  let cur=[]; try{ cur=await loadInbodyScans(); }catch(e){}
+  const have=new Set(cur.map(x=>x.date)); let n=0;
+  seed.forEach(r=>{ if(!have.has(r[0])){ cur.push({date:r[0],weight:r[1],fatPct:r[2],muscleKg:r[3],visceral:null,bmr:r[0]==='2026-11-14'?1174:null}); n++; } });
+  cur.sort((a,b)=>a.date<b.date?-1:1);
+  try{ await window.storage.set('settings:inbodyScans',JSON.stringify(cur),false); }catch(e){ toast('บันทึกไม่สำเร็จ'); return; }
+  NW.scans=cur; try{ renderInbodyHistory(cur); }catch(e){} renderAll(); toast('นำเข้าผลสแกนแล้ว '+n+' รายการ');
+};
 NW.saveGoal=async function(){
   const tg=parseFloat(val('wgTarget')); if(!(tg>0)){ toast('ใส่น้ำหนักเป้าหมายด้วยค่ะ'); return; }
   const ser=wSeries(days()), cur=ser.length?ser[ser.length-1].w:null;
@@ -6720,16 +6773,18 @@ function summary(){
   return {D,t,runs,ser,g,cur,rate,pw,wk,A,mon};
 }
 function renderScore(){
-  const el=$('scoreboard'); if(!el||!TR.S.goals) return; const S=summary(), r=S.A.race;
-  const wl = S.g.target&&S.cur!=null ? (S.cur-S.g.target<=0?'ถึงเป้า 🎉':'เหลือ '+f1(S.cur-S.g.target)+' กก.') : (S.cur!=null?'ตั้งเป้าหมาย':'ยังไม่ชั่ง');
-  const wsub = S.rate!=null ? (S.rate<0?'ลด ':'เพิ่ม ')+f2(Math.abs(S.rate))+' กก./สัปดาห์' : 'ต้องชั่ง ≥3 ครั้ง';
-  const rk = S.pw?`${f1(S.wk)}/${f1(S.pw.km)} กม.`:`${f1(S.wk)} กม.`;
-  const rs = S.pw?`${Math.round(S.pw.km?S.wk/S.pw.km*100:0)}% ของแผน`:'สัปดาห์นี้';
-  const hx = r?`อีก ${TR.diffDays(S.t,r.date)} วัน`:'ยังไม่ตั้งงาน';
-  const hs = r?(S.A.predicted?'คาด '+TR.fmtTime(S.A.predicted):`สถานี ${S.A.known}/8`):'แตะเพื่อตั้ง';
+  const el=$('scoreboard'); if(!el||!TR.S.goals) return; const S=summary(), D=S.D, t=S.t, mon=S.mon;
+  const L=lastScans().slice(-1)[0], fp=L?f1(L.fatPct)+'%':null;
+  const wl = S.g.target&&S.cur!=null ? (S.cur-S.g.target<=0?'ถึงเป้า 🎉':'เหลือ '+f1(S.cur-S.g.target)+' กก.') : (S.cur!=null?'แตะเพื่อตั้งเป้า':'ยังไม่ชั่ง');
+  const wsub = S.rate!=null ? (Math.abs(S.rate)<0.05?'นิ่ง (แนวโน้ม 4 สัปดาห์)':(S.rate<0?'ลด ':'เพิ่ม ')+f2(Math.abs(S.rate))+' กก./สัปดาห์') : (fp?'ไขมัน '+fp:'ต้องชั่ง ≥3 ครั้ง');
+  const e=energy(D[t]||{}); const intake=e?Math.round(e.intake):0, left=targets.calMax-intake;
+  const pro=e?Math.round(e.pro):0;
+  const kv=e?intake+'<small> kcal</small>':'–';
+  const km=e?(left>=0?'เหลือ '+left+' kcal':'เกินเป้า '+(-left)+' kcal'):'ยังไม่จดอาหาร';
+  const ed=exDays(D,mon,t), sw=strCount(D,mon,t);
   el.innerHTML=`<div class="sb" onclick="switchTab('weight')"><div class="l">⚖️ ลดน้ำหนัก</div><div class="v">${S.cur!=null?f1(S.cur):'–'}<small> กก.</small></div><div class="m">${wl}</div><div class="m">${wsub}</div></div>
-    <div class="sb" onclick="switchTab('train')"><div class="l">🏃 วิ่งสัปดาห์นี้</div><div class="v">${rk}</div><div class="m">${rs}</div></div>
-    <div class="sb" onclick="switchTab('hyrox')"><div class="l">🏋️ Hyrox</div><div class="v" style="font-size:15px">${hx}</div><div class="m">${hs}</div></div>`;
+    <div class="sb" onclick="document.getElementById('foodList')&&document.getElementById('foodList').scrollIntoView({behavior:'smooth'})"><div class="l">🍽️ กินวันนี้</div><div class="v">${kv}</div><div class="m">${km}</div><div class="m">โปรตีน ${pro}/${targets.proMin} g</div></div>
+    <div class="sb" onclick="switchTab('train')"><div class="l">🚶 สัปดาห์นี้</div><div class="v">${ed}<small> วัน</small></div><div class="m">ฝึกแรง ${sw}/2 ครั้ง</div><div class="m">วิ่ง ${f1(S.wk)} กม.</div></div>`;
 }
 function renderWeekly(){
   const el=$('weeklySum'); if(!el||!TR.S.goals) return; const S=summary(), D=S.D, t=S.t, lines=[], add=(ic,tx)=>lines.push(`<div class="tr-ins"><span class="ic">${ic}</span><span>${tx}</span></div>`);
@@ -6738,17 +6793,20 @@ function renderWeekly(){
   const sl=ds.filter(d=>d&&d.sleep>0).map(d=>d.sleep), slAvg=sl.length?sl.reduce((a,b)=>a+b,0)/sl.length:null;
   const en=ds.map(d=>d&&energy(d)).filter(Boolean), kc=en.length?en.reduce((a,e)=>a+e.intake,0)/en.length:null, pr=en.length?en.reduce((a,e)=>a+e.pro,0)/en.length:null;
   const runs7=S.runs.filter(r=>r.date>=from);
-  add('🏃',`วิ่ง ${runs7.length} ครั้ง รวม ${f1(runs7.reduce((a,r)=>a+r.km,0))} กม.${S.pw?` (แผนสัปดาห์นี้ ${f1(S.pw.km)} กม. • สัปดาห์นี้ทำแล้ว ${f1(S.wk)})`:''} • ออกกำลังกาย ${ex}/7 วัน`);
-  add('⚖️',S.rate!=null?`น้ำหนักแนวโน้ม ${S.rate<0?'ลด':'เพิ่ม'} ${f2(Math.abs(S.rate))} กก./สัปดาห์${kc?` • กินเฉลี่ย ${Math.round(kc)} kcal, โปรตีน ${Math.round(pr)} g (${en.length} วันที่จด)`:''}`:'ยังประเมินแนวโน้มน้ำหนักไม่ได้ (ต้องชั่ง ≥3 ครั้ง)');
+  const sw7=strCount(D,from,t);
+  add('🏃',`วิ่ง ${runs7.length} ครั้ง รวม ${f1(runs7.reduce((a,r)=>a+r.km,0))} กม.${S.pw?` (แผนสัปดาห์นี้ ${f1(S.pw.km)} กม. • สัปดาห์นี้ทำแล้ว ${f1(S.wk)})`:''} • ออกกำลังกาย ${ex}/7 วัน • ฝึกแรง/ครอสเทรน ${sw7} ครั้ง`);
+  add('⚖️',S.rate!=null?`น้ำหนักแนวโน้ม ${Math.abs(S.rate)<0.05?'นิ่ง':(S.rate<0?'ลด ':'เพิ่ม ')+f2(Math.abs(S.rate))+' กก./สัปดาห์'}${kc?` • กินเฉลี่ย ${Math.round(kc)} kcal, โปรตีน ${Math.round(pr)} g (${en.length} วันที่จด)`:''}`:'ยังประเมินแนวโน้มน้ำหนักไม่ได้ (ต้องชั่ง ≥3 ครั้ง)');
   if(slAvg!=null) add(slAvg<6?'⚠️':'😴',`นอนเฉลี่ย ${slAvg.toFixed(1)} ชม.${slAvg<6?' — ต่ำเกินไปสำหรับการลดไขมัน พัฒนา pace และฟื้นตัว':''}`);
-  if(S.A.race) add('🏋️',`Hyrox อีก ${TR.diffDays(t,S.A.race.date)} วัน • มีเวลาสถานี ${S.A.known}/8${S.A.predicted?` • คาดจบ ${TR.fmtTime(S.A.predicted)}`:''}`);
-  // one priority
-  let pri;
-  if(slAvg!=null&&slAvg<5.5) pri='นอนให้ได้ ≥ 6.5 ชม. ก่อน — เป็นตัวแปรเดียวที่ช่วยทั้งลดน้ำหนัก วิ่งเร็วขึ้น และฟื้นตัว';
-  else if(S.rate!=null&&-S.rate>(S.cur||54.5)*0.01) pri='ลดเร็วเกินไป — เพิ่มอาหาร (โปรตีน+คาร์บรอบวิ่ง) อีกเล็กน้อย เพื่อรักษากล้ามเนื้อและ pace';
-  else if(S.pw&&S.wk<S.pw.km*0.6&&TR.dow(t)>=4) pri='ปริมาณวิ่งสัปดาห์นี้ยังตามแผนอยู่ — ลองวางวิ่งเบาเพิ่มอีก 1–2 วัน (วิ่งสลับเดินได้)';
-  else if(S.A.race&&S.A.known<8) pri='ทดสอบสถานี Hyrox ที่ยังไม่มีเวลา แล้วบันทึกไว้ เพื่อให้แอปเห็นจุดอ่อนและคาดเวลาจบ';
+  if(S.A.race&&TR.diffDays(t,S.A.race.date)<=120) add('🏋️',`Hyrox อีก ${TR.diffDays(t,S.A.race.date)} วัน • มีเวลาสถานี ${S.A.known}/8${S.A.predicted?` • คาดจบ ${TR.fmtTime(S.A.predicted)}`:''}`);
+  // one priority (weight loss first)
+  let pri; const dwk=(S.t&&((TR.parse(t).getDay()+6)%7));
+  if(slAvg!=null&&slAvg<5.5) pri='นอนให้ได้ ≥ 6.5 ชม. ก่อน — เป็นตัวแปรเดียวที่ช่วยทั้งลดไขมัน ลดความอยากของหวาน และฟื้นตัว';
+  else if(S.rate!=null&&-S.rate>(S.cur||54.5)*0.01) pri='ลดเร็วเกินไป — เพิ่มอาหาร (โปรตีน+คาร์บรอบวิ่ง) อีกเล็กน้อย เพื่อรักษากล้ามเนื้อ';
+  else if(kc&&en.length>=3&&kc>targets.calMax*1.12) pri='กินเฉลี่ยเกินเป้า (~'+Math.round(kc)+' kcal) — ดูของหวาน ซอส เครื่องดื่ม และของกินเล่นที่ลืมจด วันที่กินเกินไม่ต้องอดชดเชย แค่วันถัดไปกลับมาตามแผน';
+  else if(sw7<2&&dwk>=3) pri='ฝึกแรงยังไม่ถึง 2 ครั้งในรอบ 7 วัน — ฝึก 30 นาที (สควอต เดดลิฟต์เบา พุชอัพ พายยาง) แล้วบันทึกไว้ เพื่อรักษากล้ามเนื้อและให้ % ไขมันลด ไม่ใช่แค่น้ำหนักลด';
+  else if(pr&&pr<targets.proMin*0.85) pri='โปรตีนเฉลี่ย ~'+Math.round(pr)+' g ต่ำกว่าเป้า '+targets.proMin+' g — เพิ่มไข่ โยเกิร์ต อกไก่ ในมื้อเช้าและของว่าง ช่วยอิ่มและรักษากล้ามเนื้อ';
   else if(!NW.wg||!NW.wg.target) pri='ตั้งน้ำหนักเป้าหมายในแท็บ "น้ำหนัก" เพื่อให้แอปประเมินอัตราลดที่เหมาะสม';
+  else if(S.rate!=null&&S.rate>=-0.05) pri='น้ำหนักนิ่ง — จดอาหารให้ครบทุกมื้อ 1 สัปดาห์ แล้วดูส่วน "แคลที่จด vs น้ำหนักจริง" ในแท็บน้ำหนัก';
   else pri='ทำตามแผนต่อไป — ไม่มีสัญญาณที่ต้องแก้ ✨';
   el.innerHTML=lines.join('')+`<div class="tr-warn" style="background:var(--purple-soft);border-color:rgba(139,111,209,.25);color:var(--purple-dark)"><b>สิ่งที่ควรโฟกัส:</b> ${esc(pri)}</div>`;
 }
@@ -6779,6 +6837,8 @@ NW.toggleLegacy=function(){ const on=document.body.classList.toggle('show-legacy
 if(typeof renderSummary==='function'){ const _r=renderSummary; renderSummary=function(){ const r=_r.apply(this,arguments); try{ renderScore(); renderWeekly(); const v=document.querySelector('#view-weight.active,#view-hyrox.active'); if(v){ renderWeight(); renderHyroxTab(); } }catch(e){} return r; }; }
 NW.init=async function(){
   NW.wg=await sget('settings:weightGoal');
+  try{ NW.scans=await loadInbodyScans(); }catch(e){}
+  if(typeof renderInbodyHistory==='function'){ const _ri=renderInbodyHistory; renderInbodyHistory=function(sc){ if(sc&&sc.length>=0) NW.scans=sc; const r=_ri.apply(this,arguments); try{ renderBody(); renderScore(); }catch(e){} return r; }; }
   try{ if(localStorage.getItem('ht:legacy')==='1'){ document.body.classList.add('show-legacy'); const b=$('legacyBtn'); if(b) b.textContent='ซ่อนส่วนเสริมเก่าในหน้าวันนี้'; } }catch(e){}
   renderAll(); setTimeout(renderAll,1500); setTimeout(renderAll,4000);
 };
